@@ -27,4 +27,5 @@ DyslexiAI, yapay zeka ve doğal dil işleme teknolojileriyle disleksi yaşayan 7
 - Katalog sistemi ile konu bütünlüğü
 
 ## Product Backlog URL
+https://bit.ly/grup_72
 
