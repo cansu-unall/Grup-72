@@ -20,7 +20,7 @@ Toplam proje iş yükü 750 puan olarak planlanmıştır. 3 sprintte her bir spr
 ## Sprint Board Updates
 - Tüm User Story’ler Notion Product Backlog Board’a eklenmiş ve puanlanmıştır.
 - Backlog, Doing, Done sütunları oluşturulmuştur.
-- Kanban board’un ekran görüntüsü `sprint1_board.png` olarak eklenmiştir.
+- Kanban board’un ekran görüntüsü `prototip.png` olarak eklenmiştir.
 - Burndown Chart `sprint1_burndown.png` olarak eklenmiştir.
 
 ## Ürün Durumu
@@ -35,8 +35,6 @@ Toplam proje iş yükü 750 puan olarak planlanmıştır. 3 sprintte her bir spr
 - İlk User Story şablonları belirlenmiş, proje fikri ve ana görev başlıkları backlog’a girilmeye başlanmıştır.
 - Ayrıntılı User Story’ler, puanlama ve sorumlular Sprint 2’de tam olarak detaylandırılarak board’a eklenecektir.
 - Bu aşamada fikir netleşmesi, rol paylaşımı ve temel yapı kurulması öncelikli olmuştur.
-- Kanıt olarak Notion Board’un ekran görüntüsü `sprint1_board.png` olarak `docs/` klasörüne eklenmiştir.
-
 
 ## Sprint Retrospective
 - İyi gidenler: İletişim güçlü, roller netleşti, plan zamanında hazırlandı.
