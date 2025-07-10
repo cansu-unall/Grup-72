@@ -35,17 +35,41 @@ def read_user_me(current_user: User = Depends(get_current_active_user)):
     """
     return current_user
 
-@router.get("/{user_id}", response_model=UserRead)
-def read_user(
-    user_id: int, 
+@router.post("/iliskiler/ogrenci-ogretmen", status_code=status.HTTP_201_CREATED)
+def create_student_teacher(
+    relation: StudentTeacherCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(role_required([RoleEnum.teacher]))
 ):
     """
-    Kullanıcı bilgilerini getir
+    Öğretmen-öğrenci ilişkisi oluştur (Sadece öğretmenler)
     """
-    db_user = get_user(db, user_id=user_id)
-    return db_user
+    # Sadece kendi öğrencisi olarak ekleyebilir
+    if current_user.id != relation.teacher_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Sadece kendinize öğrenci ekleyebilirsiniz"
+        )
+    
+    return create_student_teacher_relation(db=db, student_id=relation.student_id, teacher_id=relation.teacher_id)
+
+@router.post("/iliskiler/veli-cocuk", status_code=status.HTTP_201_CREATED)
+def create_parent_child(
+    relation: ParentChildCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(role_required([RoleEnum.parent]))
+):
+    """
+    Ebeveyn-çocuk ilişkisi oluştur (Sadece ebeveynler)
+    """
+    # Sadece kendi çocuğu olarak ekleyebilir
+    if current_user.id != relation.parent_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Sadece kendinize çocuk ekleyebilirsiniz"
+        )
+    
+    return create_parent_child_relation(db=db, parent_id=relation.parent_id, child_id=relation.child_id)
 
 @router.get("/", response_model=List[UserRead])
 def read_users(
@@ -79,42 +103,6 @@ def create_profile_for_user(
         )
     
     return create_user_profile(db=db, profile=profile, user_id=user_id)
-
-@router.post("/ogrenci-ogretmen", status_code=status.HTTP_201_CREATED)
-def create_student_teacher(
-    relation: StudentTeacherCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(role_required([RoleEnum.teacher]))
-):
-    """
-    Öğretmen-öğrenci ilişkisi oluştur (Sadece öğretmenler)
-    """
-    # Sadece kendi öğrencisi olarak ekleyebilir
-    if current_user.id != relation.teacher_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Sadece kendinize öğrenci ekleyebilirsiniz"
-        )
-    
-    return create_student_teacher_relation(db=db, student_id=relation.student_id, teacher_id=relation.teacher_id)
-
-@router.post("/veli-cocuk", status_code=status.HTTP_201_CREATED)
-def create_parent_child(
-    relation: ParentChildCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(role_required([RoleEnum.parent]))
-):
-    """
-    Ebeveyn-çocuk ilişkisi oluştur (Sadece ebeveynler)
-    """
-    # Sadece kendi çocuğu olarak ekleyebilir
-    if current_user.id != relation.parent_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Sadece kendinize çocuk ekleyebilirsiniz"
-        )
-    
-    return create_parent_child_relation(db=db, parent_id=relation.parent_id, child_id=relation.child_id)
 
 @router.get("/ogretmen/{teacher_id}/ogrenciler", response_model=List[UserRead])
 def read_teacher_students(
@@ -151,3 +139,15 @@ def read_parent_children(
         )
     
     return get_parent_children(db=db, parent_id=parent_id)
+
+@router.get("/{user_id}", response_model=UserRead)
+def read_user(
+    user_id: int, 
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Kullanıcı bilgilerini getir
+    """
+    db_user = get_user(db, user_id=user_id)
+    return db_user
