@@ -8,6 +8,7 @@ class Role(str, Enum):
     student = "student"
     teacher = "teacher"
     parent = "parent"
+    admin = "admin"
 
 # Base user schema
 class UserBase(BaseModel):
@@ -43,22 +44,70 @@ class TokenData(BaseModel):
 
 # User profile base schema
 class UserProfileBase(BaseModel):
-    age: Optional[int] = None
-    dyslexia_level: Optional[str] = None
     additional_info: Optional[str] = None
 
-# User profile create schema
+# Student profile schema
+class StudentProfileBase(UserProfileBase):
+    age: Optional[int] = None
+    dyslexia_level: Optional[str] = None
+
+class StudentProfileCreate(StudentProfileBase):
+    pass
+
+class StudentProfileRead(StudentProfileBase):
+    id: int
+    user_id: int
+    
+    class Config:
+        orm_mode = True
+
+# Teacher profile schema
+class TeacherProfileBase(UserProfileBase):
+    specialization: Optional[str] = None  # Genel uzmanlık alanı (matematik, dil, fen vb.)
+    dyslexia_approach: Optional[str] = None  # Disleksi öğretim yaklaşımı
+    experience_years: Optional[int] = None  # Deneyim yılı
+    qualifications: Optional[str] = None  # Eğitim ve sertifikalar
+
+class TeacherProfileCreate(TeacherProfileBase):
+    pass
+
+class TeacherProfileRead(TeacherProfileBase):
+    id: int
+    user_id: int
+    
+    class Config:
+        orm_mode = True
+
+# Parent profile schema
+class ParentProfileBase(UserProfileBase):
+    relationship_type: Optional[str] = None  # Anne, Baba, Vasi vb.
+
+class ParentProfileCreate(ParentProfileBase):
+    pass
+
+class ParentProfileRead(ParentProfileBase):
+    id: int
+    user_id: int
+    
+    class Config:
+        orm_mode = True
+
+# Deprecated: Eski kod ile uyumluluk için (kaldırılacak)
 class UserProfileCreate(UserProfileBase):
-    pass
+    age: Optional[int] = None
+    dyslexia_level: Optional[str] = None
 
-# User profile update schema
+# Deprecated: Eski kod ile uyumluluk için (kaldırılacak)
 class UserProfileUpdate(UserProfileBase):
-    pass
+    age: Optional[int] = None
+    dyslexia_level: Optional[str] = None
 
-# User profile schema with user relationship
+# Deprecated: Eski kod ile uyumluluk için (kaldırılacak)
 class UserProfileRead(UserProfileBase):
     id: int
     user_id: int
+    age: Optional[int] = None
+    dyslexia_level: Optional[str] = None
     
     class Config:
         orm_mode = True
@@ -68,10 +117,26 @@ class UserRead(UserBase):
     id: int
     is_active: bool
     created_at: datetime
-    profile: Optional[UserProfileRead] = None
+    student_profile: Optional[StudentProfileRead] = None
+    teacher_profile: Optional[TeacherProfileRead] = None
+    parent_profile: Optional[ParentProfileRead] = None
     
     class Config:
         orm_mode = True
+
+# User read schema with relations
+class UserReadWithRelations(UserRead):
+    # İlişkili kullanıcılar burada yer alacak
+    related_students: Optional[List["UserRead"]] = None  # Öğretmen için: öğrenciler
+    related_children: Optional[List["UserRead"]] = None  # Veli için: çocuklar  
+    related_teachers: Optional[List["UserRead"]] = None  # Öğrenci için: öğretmenler
+    related_parents: Optional[List["UserRead"]] = None   # Öğrenci için: veliler
+    
+    class Config:
+        orm_mode = True
+
+# Pydantic'in recursive modelleri çözebilmesi için gereken forward reference
+UserReadWithRelations.update_forward_refs()
 
 # Activity base schema
 class ActivityBase(BaseModel):

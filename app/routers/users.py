@@ -3,16 +3,20 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from ..services import (
-    create_user, get_user, get_users, create_user_profile, 
+    create_user, get_user, get_users,  
     create_student_teacher_relation, create_parent_child_relation,
     get_teacher_students, get_parent_children,
-    get_current_active_user, role_required
+    get_current_active_user, role_required,
+    create_student_profile, create_teacher_profile, create_parent_profile
 )
 from ..schemas import (
-    UserCreate, UserRead, UserProfileCreate, UserProfileRead, 
-    StudentTeacherCreate, ParentChildCreate, Role
+    UserCreate, UserRead, UserReadWithRelations,
+    StudentTeacherCreate, ParentChildCreate, Role,
+    StudentProfileCreate, StudentProfileRead,
+    TeacherProfileCreate, TeacherProfileRead,
+    ParentProfileCreate, ParentProfileRead
 )
-from ..models import User, RoleEnum
+from ..models import User, RoleEnum, StudentTeacher, ParentChild
 from ..database import get_db
 
 router = APIRouter(
@@ -77,32 +81,120 @@ def read_users(
     limit: int = 100, 
     role: Optional[Role] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(role_required([RoleEnum.teacher, RoleEnum.parent]))
+    current_user: User = Depends(role_required([RoleEnum.admin]))
 ):
     """
-    Kullanıcıları listele (Sadece öğretmenler ve ebeveynler)
+    Kullanıcıları listele (Sadece admin)
     """
     users = get_users(db, skip=skip, limit=limit, role=role)
     return users
 
-@router.post("/{user_id}/profil", response_model=UserProfileRead)
-def create_profile_for_user(
+@router.delete("/eski-profil-silme", status_code=status.HTTP_200_OK)
+def delete_legacy_profiles(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(role_required([RoleEnum.teacher]))  # Sadece öğretmenler çalıştırabilir
+):
+    """
+    Eski profil verilerini siler (Migrasyon sonrası temizlik için)
+    """
+    from ..models import UserProfile
+    
+    # Tüm eski profilleri bul ve sil
+    old_profiles = db.query(UserProfile).all()
+    deleted_count = len(old_profiles)
+    
+    for profile in old_profiles:
+        db.delete(profile)
+    
+    db.commit()
+    return {"message": f"{deleted_count} eski profil başarıyla silindi"}
+
+@router.post("/{user_id}/ogrenci-profili", response_model=StudentProfileRead)
+def create_student_profile_for_user(
     user_id: int,
-    profile: UserProfileCreate,
+    profile: StudentProfileCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """
-    Kullanıcı profili oluştur
+    Öğrenci profili oluştur (Sadece öğrenciler için)
     """
-    # Sadece kendi profili veya yetkiliyse
+    # Profil oluşturulacak kullanıcıyı kontrol et
+    db_user = get_user(db, user_id=user_id)
+    
+    # Sadece öğrenciler için profil oluşturulabilir
+    if db_user.role != RoleEnum.student:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Sadece öğrenci rollü kullanıcılar için profil oluşturulabilir"
+        )
+    
+    # Yetki kontrolü: Sadece kendi profili veya yetkili kullanıcı (öğretmen/ebeveyn)
     if current_user.id != user_id and current_user.role not in [RoleEnum.teacher, RoleEnum.parent]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Başka bir kullanıcı için profil oluşturamazsınız"
+            detail="Başka bir öğrenci için profil oluşturamazsınız"
         )
     
-    return create_user_profile(db=db, profile=profile, user_id=user_id)
+    return create_student_profile(db=db, profile=profile, user_id=user_id)
+
+@router.post("/{user_id}/ogretmen-profili", response_model=TeacherProfileRead)
+def create_teacher_profile_for_user(
+    user_id: int,
+    profile: TeacherProfileCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Öğretmen profili oluştur (Sadece öğretmenler için)
+    """
+    # Profil oluşturulacak kullanıcıyı kontrol et
+    db_user = get_user(db, user_id=user_id)
+    
+    # Sadece öğretmenler için profil oluşturulabilir
+    if db_user.role != RoleEnum.teacher:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Sadece öğretmen rollü kullanıcılar için profil oluşturulabilir"
+        )
+    
+    # Yetki kontrolü: Sadece kendi profili
+    if current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Sadece kendi profilinizi oluşturabilirsiniz"
+        )
+    
+    return create_teacher_profile(db=db, profile=profile, user_id=user_id)
+
+@router.post("/{user_id}/veli-profili", response_model=ParentProfileRead)
+def create_parent_profile_for_user(
+    user_id: int,
+    profile: ParentProfileCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Veli profili oluştur (Sadece veliler için)
+    """
+    # Profil oluşturulacak kullanıcıyı kontrol et
+    db_user = get_user(db, user_id=user_id)
+    
+    # Sadece veliler için profil oluşturulabilir
+    if db_user.role != RoleEnum.parent:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Sadece veli rollü kullanıcılar için profil oluşturulabilir"
+        )
+    
+    # Yetki kontrolü: Sadece kendi profili
+    if current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Sadece kendi profilinizi oluşturabilirsiniz"
+        )
+    
+    return create_parent_profile(db=db, profile=profile, user_id=user_id)
 
 @router.get("/ogretmen/{teacher_id}/ogrenciler", response_model=List[UserRead])
 def read_teacher_students(
@@ -140,14 +232,94 @@ def read_parent_children(
     
     return get_parent_children(db=db, parent_id=parent_id)
 
-@router.get("/{user_id}", response_model=UserRead)
+@router.get("/{user_id}", response_model=UserReadWithRelations)
 def read_user(
     user_id: int, 
+    include_relations: bool = True,  # İlişkileri dahil etmek için yeni parametre
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """
-    Kullanıcı bilgilerini getir
+    Kullanıcı bilgilerini getir (Sadece kendisi, ilişkili öğretmen/veli veya admin)
+    İlişkili kullanıcılar (öğretmenlerin öğrencileri, velilerin çocukları) da dahil edilebilir.
     """
-    db_user = get_user(db, user_id=user_id)
+    # Kendi profilini görüntülüyor mu?
+    if current_user.id == user_id:
+        db_user = get_user(db, user_id=user_id)
+    # Admin mi kontrol et
+    elif current_user.role == RoleEnum.admin:
+        db_user = get_user(db, user_id=user_id)
+    # Öğretmen, öğrencilerini görüntüleyebilir
+    elif current_user.role == RoleEnum.teacher:
+        students = get_teacher_students(db, teacher_id=current_user.id)
+        student_ids = [student.id for student in students]
+        if user_id in student_ids:
+            db_user = get_user(db, user_id=user_id)
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Bu kullanıcının bilgilerine erişim yetkiniz yok"
+            )
+    # Veli, çocuklarını görüntüleyebilir
+    elif current_user.role == RoleEnum.parent:
+        children = get_parent_children(db, parent_id=current_user.id)
+        child_ids = [child.id for child in children]
+        if user_id in child_ids:
+            db_user = get_user(db, user_id=user_id)
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Bu kullanıcının bilgilerine erişim yetkiniz yok"
+            )
+    else:
+        # Yetkisiz erişim
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bu kullanıcının bilgilerine erişim yetkiniz yok"
+        )
+    
+    # İlişkileri yükle
+    if include_relations:
+        result = {
+            **db_user.__dict__,
+            "related_students": [],
+            "related_children": [],
+            "related_teachers": [],
+            "related_parents": []
+        }
+        
+        if db_user.role == RoleEnum.teacher:
+            # Öğretmenin öğrencileri
+            result["related_students"] = get_teacher_students(db, teacher_id=db_user.id)
+        elif db_user.role == RoleEnum.parent:
+            # Velinin çocukları
+            result["related_children"] = get_parent_children(db, parent_id=db_user.id)
+        elif db_user.role == RoleEnum.student:
+            # Öğrencinin öğretmenleri
+            # Öğretmen-öğrenci ilişkisini bul
+            student_teachers = db.query(StudentTeacher).filter_by(student_id=db_user.id).all()
+            teacher_ids = [relation.teacher_id for relation in student_teachers]
+            teachers = db.query(User).filter(User.id.in_(teacher_ids)).all()
+            result["related_teachers"] = teachers
+            
+            # Öğrencinin velileri
+            # Veli-çocuk ilişkisini bul
+            parent_children = db.query(ParentChild).filter_by(child_id=db_user.id).all()
+            parent_ids = [relation.parent_id for relation in parent_children]
+            parents = db.query(User).filter(User.id.in_(parent_ids)).all()
+            result["related_parents"] = parents
+        
+        return result
+    
     return db_user
+
+@router.post("/profil-migrasyonu", status_code=status.HTTP_200_OK, deprecated=True)
+def migrate_profiles(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(role_required([RoleEnum.teacher]))  # Sadece öğretmenler çalıştırabilir
+):
+    """
+    Eski profil verileri zaten taşındı ve eski profil tablosu kaldırıldı.
+    Bu endpoint artık kullanım dışıdır.
+    """
+    return {"message": "Profil migrasyonu tamamlandı. Eski profil tablosu kaldırıldı."}

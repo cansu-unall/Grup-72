@@ -9,6 +9,7 @@ class RoleEnum(str, enum.Enum):
     student = "student"
     teacher = "teacher"
     parent = "parent"
+    admin = "admin"
 
 # User model
 class User(Base):
@@ -25,7 +26,9 @@ class User(Base):
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
     
     # Relationships
-    profile = relationship("UserProfile", back_populates="user", uselist=False)
+    student_profile = relationship("StudentProfile", back_populates="user", uselist=False)
+    teacher_profile = relationship("TeacherProfile", back_populates="user", uselist=False)
+    parent_profile = relationship("ParentProfile", back_populates="user", uselist=False)
     student_activities = relationship("Activity", back_populates="student")
     
     # Teacher öğrenci ilişkisi
@@ -36,9 +39,13 @@ class User(Base):
     children = relationship("ParentChild", back_populates="parent", foreign_keys="ParentChild.parent_id")
     parents = relationship("ParentChild", back_populates="child", foreign_keys="ParentChild.child_id")
 
-# User profil modeli
-class UserProfile(Base):
-    __tablename__ = "user_profiles"
+# User profil modeli (KALDIRILDI)
+# Bu model artık kullanılmıyor ve veritabanından kaldırıldı
+# Yerine rol bazlı profil modelleri kullanılıyor
+
+# Öğrenci profil modeli
+class StudentProfile(Base):
+    __tablename__ = "student_profiles"
     
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), unique=True)
@@ -46,7 +53,32 @@ class UserProfile(Base):
     dyslexia_level = Column(String, nullable=True)
     additional_info = Column(Text, nullable=True)
     
-    user = relationship("User", back_populates="profile")
+    user = relationship("User", back_populates="student_profile")
+
+# Öğretmen profil modeli
+class TeacherProfile(Base):
+    __tablename__ = "teacher_profiles"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+    specialization = Column(String, nullable=True)  # Genel uzmanlık alanı
+    dyslexia_approach = Column(String, nullable=True)  # Disleksi öğretim yaklaşımı
+    experience_years = Column(Integer, nullable=True)  # Deneyim yılı
+    qualifications = Column(String, nullable=True)  # Eğitim ve sertifikalar
+    additional_info = Column(Text, nullable=True)  # Ek bilgiler
+    
+    user = relationship("User", back_populates="teacher_profile")
+
+# Veli profil modeli
+class ParentProfile(Base):
+    __tablename__ = "parent_profiles"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+    relationship_type = Column(String, nullable=True)
+    additional_info = Column(Text, nullable=True)
+    
+    user = relationship("User", back_populates="parent_profile")
 
 # Öğrenci-Öğretmen ilişki tablosu
 class StudentTeacher(Base):

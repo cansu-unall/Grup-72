@@ -2,8 +2,10 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from typing import List, Optional
 
-from ..models import User, UserProfile, StudentTeacher, ParentChild, RoleEnum
+from ..models import User, StudentTeacher, ParentChild, RoleEnum
+from ..models import StudentProfile, TeacherProfile, ParentProfile
 from ..schemas import UserCreate, UserProfileCreate
+from ..schemas import StudentProfileCreate, TeacherProfileCreate, ParentProfileCreate
 from .auth import get_password_hash
 
 # Kullanıcı oluşturma servisi
@@ -33,36 +35,33 @@ def create_user(db: Session, user: UserCreate):
     db.refresh(db_user)
     return db_user
 
-# Kullanıcı profili oluşturma servisi
+# Kullanıcı profili oluşturma servisi (DEPRECATED - Artık kullanılmıyor)
 def create_user_profile(db: Session, profile: UserProfileCreate, user_id: int):
-    # Kullanıcı kontrolü
-    db_user = db.query(User).filter(User.id == user_id).first()
-    if not db_user:
-        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
+    # Bu fonksiyon artık kullanılmamaktadır.
+    # Yerine rol-bazlı profil oluşturma fonksiyonları kullanılmalıdır.
+    import warnings
+    warnings.warn("create_user_profile fonksiyonu kaldırılmıştır. Lütfen rol bazlı profil fonksiyonlarını kullanın.", DeprecationWarning)
     
-    # Profil kontrolü
-    db_profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
-    if db_profile:
-        raise HTTPException(status_code=400, detail="Kullanıcının zaten bir profili var")
-    
-    # Profil oluşturma
-    db_profile = UserProfile(
-        user_id=user_id,
-        age=profile.age,
-        dyslexia_level=profile.dyslexia_level,
-        additional_info=profile.additional_info
+    # Eski UserProfile tablosu kaldırıldığı için bu fonksiyon artık çalışmaz
+    raise HTTPException(
+        status_code=410, 
+        detail="Bu API kaldırılmıştır. Lütfen rol bazlı profil API'lerini kullanın."
     )
-    
-    db.add(db_profile)
-    db.commit()
-    db.refresh(db_profile)
-    return db_profile
 
 # Kullanıcı getirme servisi
 def get_user(db: Session, user_id: int):
     db_user = db.query(User).filter(User.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
+    
+    # Rol bazlı profilleri yükle (lazy loading)
+    if db_user.role == RoleEnum.student:
+        _ = db_user.student_profile
+    elif db_user.role == RoleEnum.teacher:
+        _ = db_user.teacher_profile
+    elif db_user.role == RoleEnum.parent:
+        _ = db_user.parent_profile
+    
     return db_user
 
 # Email ile kullanıcı getirme servisi
@@ -78,7 +77,19 @@ def get_users(db: Session, skip: int = 0, limit: int = 100, role: Optional[RoleE
     query = db.query(User)
     if role:
         query = query.filter(User.role == role)
-    return query.offset(skip).limit(limit).all()
+    
+    users = query.offset(skip).limit(limit).all()
+    
+    # Rol bazlı profilleri yükle
+    for user in users:
+        if user.role == RoleEnum.student:
+            _ = user.student_profile
+        elif user.role == RoleEnum.teacher:
+            _ = user.teacher_profile
+        elif user.role == RoleEnum.parent:
+            _ = user.parent_profile
+    
+    return users
 
 # Öğretmen-öğrenci ilişkisi oluşturma servisi
 def create_student_teacher_relation(db: Session, student_id: int, teacher_id: int):
@@ -155,3 +166,91 @@ def get_parent_children(db: Session, parent_id: int):
     
     children = db.query(User).filter(User.id.in_(child_ids)).all()
     return children
+
+# Öğrenci profili oluşturma servisi
+def create_student_profile(db: Session, profile: StudentProfileCreate, user_id: int):
+    # Kullanıcı kontrolü
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
+    
+    # Rol kontrolü
+    if db_user.role != RoleEnum.student:
+        raise HTTPException(status_code=400, detail="Bu kullanıcı bir öğrenci değil")
+    
+    # Profil kontrolü
+    db_profile = db.query(StudentProfile).filter(StudentProfile.user_id == user_id).first()
+    if db_profile:
+        raise HTTPException(status_code=400, detail="Öğrencinin zaten bir profili var")
+    
+    # Profil oluşturma
+    db_profile = StudentProfile(
+        user_id=user_id,
+        age=profile.age,
+        dyslexia_level=profile.dyslexia_level,
+        additional_info=profile.additional_info
+    )
+    
+    db.add(db_profile)
+    db.commit()
+    db.refresh(db_profile)
+    return db_profile
+
+# Öğretmen profili oluşturma servisi
+def create_teacher_profile(db: Session, profile: TeacherProfileCreate, user_id: int):
+    # Kullanıcı kontrolü
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
+    
+    # Rol kontrolü
+    if db_user.role != RoleEnum.teacher:
+        raise HTTPException(status_code=400, detail="Bu kullanıcı bir öğretmen değil")
+    
+    # Profil kontrolü
+    db_profile = db.query(TeacherProfile).filter(TeacherProfile.user_id == user_id).first()
+    if db_profile:
+        raise HTTPException(status_code=400, detail="Öğretmenin zaten bir profili var")
+    
+    # Profil oluşturma
+    db_profile = TeacherProfile(
+        user_id=user_id,
+        specialization=profile.specialization,
+        dyslexia_approach=profile.dyslexia_approach,
+        experience_years=profile.experience_years,
+        qualifications=profile.qualifications,
+        additional_info=profile.additional_info
+    )
+    
+    db.add(db_profile)
+    db.commit()
+    db.refresh(db_profile)
+    return db_profile
+
+# Veli profili oluşturma servisi
+def create_parent_profile(db: Session, profile: ParentProfileCreate, user_id: int):
+    # Kullanıcı kontrolü
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
+    
+    # Rol kontrolü
+    if db_user.role != RoleEnum.parent:
+        raise HTTPException(status_code=400, detail="Bu kullanıcı bir veli değil")
+    
+    # Profil kontrolü
+    db_profile = db.query(ParentProfile).filter(ParentProfile.user_id == user_id).first()
+    if db_profile:
+        raise HTTPException(status_code=400, detail="Velinin zaten bir profili var")
+    
+    # Profil oluşturma
+    db_profile = ParentProfile(
+        user_id=user_id,
+        relationship_type=profile.relationship_type,
+        additional_info=profile.additional_info
+    )
+    
+    db.add(db_profile)
+    db.commit()
+    db.refresh(db_profile)
+    return db_profile
