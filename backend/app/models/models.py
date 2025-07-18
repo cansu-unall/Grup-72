@@ -102,6 +102,18 @@ class ParentChild(Base):
     parent = relationship("User", back_populates="children", foreign_keys=[parent_id])
     child = relationship("User", back_populates="parents", foreign_keys=[child_id])
 
+# Token blacklist modeli
+class TokenBlacklist(Base):
+    __tablename__ = "token_blacklist"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    token = Column(String, nullable=False, unique=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    blacklisted_at = Column(DateTime, default=datetime.now)
+    expires_at = Column(DateTime, nullable=False)
+    
+    user = relationship("User")
+
 # Aktivite modeli
 class Activity(Base):
     __tablename__ = "activities"

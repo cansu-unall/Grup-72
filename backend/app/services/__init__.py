@@ -1,6 +1,7 @@
 from .auth import (
     verify_password, get_password_hash, authenticate_user, create_access_token,
-    get_current_user, get_current_active_user, role_required
+    get_current_user, get_current_active_user, role_required,
+    is_token_blacklisted, blacklist_token
 )
 from .user import (
     create_user, get_user, get_users, get_user_by_email, get_user_by_username,

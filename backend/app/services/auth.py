@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 import os
 
-from ..models import User
+from ..models import User, TokenBlacklist
 from ..schemas import TokenData
 from ..database import get_db
 
@@ -55,6 +55,30 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
+# Token blacklist kontrolü
+def is_token_blacklisted(db: Session, token: str) -> bool:
+    """
+    Token'ın blacklist'te olup olmadığını kontrol eder
+    """
+    blacklisted_token = db.query(TokenBlacklist).filter(
+        TokenBlacklist.token == token
+    ).first()
+    return blacklisted_token is not None
+
+# Token'ı blacklist'e ekleme
+def blacklist_token(db: Session, token: str, user_id: int, expires_at: datetime):
+    """
+    Token'ı blacklist'e ekler
+    """
+    blacklisted_token = TokenBlacklist(
+        token=token,
+        user_id=user_id,
+        expires_at=expires_at
+    )
+    db.add(blacklisted_token)
+    db.commit()
+    return blacklisted_token
+
 # Geçerli kullanıcıyı alma
 async def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
@@ -62,6 +86,14 @@ async def get_current_user(db: Session = Depends(get_db), token: str = Depends(o
         detail="Kimlik doğrulanamadı",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    
+    # Token blacklist kontrolü
+    if is_token_blacklisted(db, token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token geçersiz (oturum kapatılmış)",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
