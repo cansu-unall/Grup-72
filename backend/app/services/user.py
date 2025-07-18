@@ -10,6 +10,48 @@ from ..schemas import StudentProfileCreate, TeacherProfileCreate, ParentProfileC
 from ..schemas import TeacherProfileCreate  # Eğer TeacherProfileUpdate şeman varsa onu da ekle
 from ..schemas import ParentProfileCreate  # Eğer ParentProfileUpdate şeman varsa onu da ekle
 
+# Öğrenci profili silme servisi
+def delete_student_profile(db: Session, user_id: int):
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
+    if db_user.role != RoleEnum.student:
+        raise HTTPException(status_code=400, detail="Bu kullanıcı bir öğrenci değil")
+    db_profile = db.query(StudentProfile).filter(StudentProfile.user_id == user_id).first()
+    if not db_profile:
+        raise HTTPException(status_code=404, detail="Öğrenci profili bulunamadı")
+    db.delete(db_profile)
+    db.commit()
+    return {"detail": "Öğrenci profili başarıyla silindi"}
+
+# Öğretmen profili silme servisi
+def delete_teacher_profile(db: Session, user_id: int):
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
+    if db_user.role != RoleEnum.teacher:
+        raise HTTPException(status_code=400, detail="Bu kullanıcı bir öğretmen değil")
+    db_profile = db.query(TeacherProfile).filter(TeacherProfile.user_id == user_id).first()
+    if not db_profile:
+        raise HTTPException(status_code=404, detail="Öğretmen profili bulunamadı")
+    db.delete(db_profile)
+    db.commit()
+    return {"detail": "Öğretmen profili başarıyla silindi"}
+
+# Veli profili silme servisi
+def delete_parent_profile(db: Session, user_id: int):
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
+    if db_user.role != RoleEnum.parent:
+        raise HTTPException(status_code=400, detail="Bu kullanıcı bir veli değil")
+    db_profile = db.query(ParentProfile).filter(ParentProfile.user_id == user_id).first()
+    if not db_profile:
+        raise HTTPException(status_code=404, detail="Veli profili bulunamadı")
+    db.delete(db_profile)
+    db.commit()
+    return {"detail": "Veli profili başarıyla silindi"}
+
 # Öğretmen profili güncelleme servisi
 def update_teacher_profile(db: Session, user_id: int, profile_update: TeacherProfileCreate):  # TeacherProfileUpdate şeman varsa onu kullan
     db_user = db.query(User).filter(User.id == user_id).first()

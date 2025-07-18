@@ -8,8 +8,10 @@ from ..services import (
     get_teacher_students, get_parent_children,
     get_current_active_user, role_required,
     create_student_profile, create_teacher_profile, create_parent_profile,
-    update_student_profile, update_teacher_profile, update_parent_profile
+    update_student_profile, update_teacher_profile, update_parent_profile,
+    delete_student_profile, delete_teacher_profile, delete_parent_profile
 )
+
 from ..schemas import (
     UserCreate, UserRead, UserReadWithRelations, UserUpdate,
     StudentTeacherCreate, ParentChildCreate, Role,
@@ -159,34 +161,6 @@ def update_teacher_profile_for_user(
     return update_teacher_profile(db=db, user_id=user_id, profile_update=profile_update)
 
 # Veli profili güncelleme endpointi
-# Öğretmen profili güncelleme endpointi
-@router.put("/{user_id}/ogretmen-profili", response_model=TeacherProfileRead)
-def update_teacher_profile_for_user(
-    user_id: int,
-    profile_update: TeacherProfileCreate,  # veya TeacherProfileUpdate şeman varsa onu kullan
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
-):
-    """
-    Öğretmen profili güncelle (Sadece öğretmen kendi profilini güncelleyebilir)
-    """
-    db_user = get_user(db, user_id=user_id)
-    if db_user.role != RoleEnum.teacher:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Sadece öğretmen rollü kullanıcılar için profil güncellenebilir"
-        )
-
-    # Sadece kendi profilini güncelleyebilir
-    if current_user.role != RoleEnum.teacher or current_user.id != user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Sadece kendi öğretmen profilinizi güncelleyebilirsiniz"
-        )
-
-    return update_teacher_profile(db=db, user_id=user_id, profile_update=profile_update)
-
-# Veli profili güncelleme endpointi
 @router.put("/{user_id}/veli-profili", response_model=ParentProfileRead)
 def update_parent_profile_for_user(
     user_id: int,
@@ -212,6 +186,105 @@ def update_parent_profile_for_user(
         )
 
     return update_parent_profile(db=db, user_id=user_id, profile_update=profile_update)
+
+
+# Öğrenci profili silme endpointi
+@router.delete("/{user_id}/ogrenci-profili", status_code=status.HTTP_200_OK)
+def delete_student_profile_for_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Öğrenci profilini sil (Kullanıcıyı silmez)
+    - Öğrenci: Sadece kendi profilini silebilir
+    - Öğretmen: Sadece kendi öğrencisinin profilini silebilir
+    - Veli ve diğer roller: Yetkisi yok
+    """
+    db_user = get_user(db, user_id=user_id)
+    if db_user.role != RoleEnum.student:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Sadece öğrenci rollü kullanıcıların profili silinebilir"
+        )
+
+    # Öğrenci kendi profilini silebilir
+    if current_user.role == RoleEnum.student:
+        if current_user.id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Sadece kendi öğrenci profilinizi silebilirsiniz"
+            )
+    # Öğretmen kendi öğrencisinin profilini silebilir
+    elif current_user.role == RoleEnum.teacher:
+        teacher_students = get_teacher_students(db, teacher_id=current_user.id)
+        student_ids = [student.id for student in teacher_students]
+        if user_id not in student_ids:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Sadece kendi öğrencilerinizin profilini silebilirsiniz"
+            )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bu işlem için yetkiniz yok"
+        )
+
+    return delete_student_profile(db=db, user_id=user_id)
+
+# Öğretmen profili silme endpointi
+@router.delete("/{user_id}/ogretmen-profili", status_code=status.HTTP_200_OK)
+def delete_teacher_profile_for_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Öğretmen profilini sil (Kullanıcıyı silmez)
+    - Sadece öğretmen kendi profilini silebilir
+    """
+    db_user = get_user(db, user_id=user_id)
+    if db_user.role != RoleEnum.teacher:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Sadece öğretmen rollü kullanıcıların profili silinebilir"
+        )
+
+    # Sadece kendi profilini silebilir
+    if current_user.role != RoleEnum.teacher or current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Sadece kendi öğretmen profilinizi silebilirsiniz"
+        )
+
+    return delete_teacher_profile(db=db, user_id=user_id)
+
+# Veli profili silme endpointi
+@router.delete("/{user_id}/veli-profili", status_code=status.HTTP_200_OK)
+def delete_parent_profile_for_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Veli profilini sil (Kullanıcıyı silmez)
+    - Sadece veli kendi profilini silebilir
+    """
+    db_user = get_user(db, user_id=user_id)
+    if db_user.role != RoleEnum.parent:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Sadece veli rollü kullanıcıların profili silinebilir"
+        )
+
+    # Sadece kendi profilini silebilir
+    if current_user.role != RoleEnum.parent or current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Sadece kendi veli profilinizi silebilirsiniz"
+        )
+
+    return delete_parent_profile(db=db, user_id=user_id)
 
 @router.post("/iliskiler/ogrenci-ogretmen", status_code=status.HTTP_201_CREATED)
 def create_student_teacher(
