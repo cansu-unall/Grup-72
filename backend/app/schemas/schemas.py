@@ -59,8 +59,14 @@ class StudentProfileBase(UserProfileBase):
     age: Optional[int] = None
     dyslexia_level: Optional[str] = None
 
+
 class StudentProfileCreate(StudentProfileBase):
     pass
+
+# Öğrenci profili güncelleme şeması
+class StudentProfileUpdate(UserProfileBase):
+    age: Optional[int] = None
+    dyslexia_level: Optional[str] = None
 
 class StudentProfileRead(StudentProfileBase):
     id: int

@@ -1,5 +1,28 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from typing import List, Optional
+
+from ..services import (
+    create_user, get_user, get_users, update_user,  
+    create_student_teacher_relation, create_parent_child_relation,
+    get_teacher_students, get_parent_children,
+    get_current_active_user, role_required,
+    create_student_profile, create_teacher_profile, create_parent_profile,
+    update_student_profile, update_teacher_profile, update_parent_profile
+)
+from ..schemas import (
+    UserCreate, UserRead, UserReadWithRelations, UserUpdate,
+    StudentTeacherCreate, ParentChildCreate, Role,
+    StudentProfileCreate, StudentProfileRead, StudentProfileUpdate,
+    TeacherProfileCreate, TeacherProfileRead,
+    ParentProfileCreate, ParentProfileRead
+)
+from ..models import User, RoleEnum, StudentTeacher, ParentChild
+from ..database import get_db
+from ..schemas import StudentProfileUpdate
+from ..schemas import StudentProfileUpdate
+
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List, Optional
 
 from ..services import (
@@ -60,6 +83,135 @@ def update_user_endpoint(
         )
     
     return update_user(db=db, user_id=user_id, user_update=user_update)
+
+# Öğrenci profili güncelleme endpointi
+@router.put("/{user_id}/ogrenci-profili", response_model=StudentProfileRead)
+def update_student_profile_for_user(
+    user_id: int,
+    profile_update: StudentProfileUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Öğrenci profili güncelle (Sadece öğrenci profili için)
+    - Öğrenci: Sadece kendi profilini güncelleyebilir
+    - Öğretmen: Sadece kendi öğrencilerinin profillerini güncelleyebilir
+    - Veli: Yetkisi yok
+    """
+    db_user = get_user(db, user_id=user_id)
+    if db_user.role != RoleEnum.student:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Sadece öğrenci rollü kullanıcılar için profil güncellenebilir"
+        )
+
+    # Eğer giriş yapan kullanıcı öğrenci ise, sadece kendi profilini güncelleyebilir
+    if current_user.role == RoleEnum.student:
+        if current_user.id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Sadece kendi öğrenci profilinizi güncelleyebilirsiniz"
+            )
+    # Eğer giriş yapan kullanıcı öğretmen ise, sadece kendi öğrencilerinin profillerini güncelleyebilir
+    elif current_user.role == RoleEnum.teacher:
+        # Öğretmenin öğrencilerini al
+        teacher_students = get_teacher_students(db, teacher_id=current_user.id)
+        student_ids = [student.id for student in teacher_students]
+        if user_id not in student_ids:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Sadece kendi öğrencilerinizin profilini güncelleyebilirsiniz"
+            )
+    else:
+        # Veli veya diğer roller için yetki yok
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bu işlem için yetkiniz yok"
+        )
+
+    return update_student_profile(db=db, user_id=user_id, profile_update=profile_update)
+
+# Öğretmen profili güncelleme endpointi
+@router.put("/{user_id}/ogretmen-profili", response_model=TeacherProfileRead)
+def update_teacher_profile_for_user(
+    user_id: int,
+    profile_update: TeacherProfileCreate,  # veya TeacherProfileUpdate şeman varsa onu kullan
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Öğretmen profili güncelle (Sadece öğretmen kendi profilini güncelleyebilir)
+    """
+    db_user = get_user(db, user_id=user_id)
+    if db_user.role != RoleEnum.teacher:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Sadece öğretmen rollü kullanıcılar için profil güncellenebilir"
+        )
+
+    # Sadece kendi profilini güncelleyebilir
+    if current_user.role != RoleEnum.teacher or current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Sadece kendi öğretmen profilinizi güncelleyebilirsiniz"
+        )
+
+    return update_teacher_profile(db=db, user_id=user_id, profile_update=profile_update)
+
+# Veli profili güncelleme endpointi
+# Öğretmen profili güncelleme endpointi
+@router.put("/{user_id}/ogretmen-profili", response_model=TeacherProfileRead)
+def update_teacher_profile_for_user(
+    user_id: int,
+    profile_update: TeacherProfileCreate,  # veya TeacherProfileUpdate şeman varsa onu kullan
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Öğretmen profili güncelle (Sadece öğretmen kendi profilini güncelleyebilir)
+    """
+    db_user = get_user(db, user_id=user_id)
+    if db_user.role != RoleEnum.teacher:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Sadece öğretmen rollü kullanıcılar için profil güncellenebilir"
+        )
+
+    # Sadece kendi profilini güncelleyebilir
+    if current_user.role != RoleEnum.teacher or current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Sadece kendi öğretmen profilinizi güncelleyebilirsiniz"
+        )
+
+    return update_teacher_profile(db=db, user_id=user_id, profile_update=profile_update)
+
+# Veli profili güncelleme endpointi
+@router.put("/{user_id}/veli-profili", response_model=ParentProfileRead)
+def update_parent_profile_for_user(
+    user_id: int,
+    profile_update: ParentProfileCreate,  # veya ParentProfileUpdate şeman varsa onu kullan
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Veli profili güncelle (Sadece veli kendi profilini güncelleyebilir)
+    """
+    db_user = get_user(db, user_id=user_id)
+    if db_user.role != RoleEnum.parent:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Sadece veli rollü kullanıcılar için profil güncellenebilir"
+        )
+
+    # Sadece kendi profilini güncelleyebilir
+    if current_user.role != RoleEnum.parent or current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Sadece kendi veli profilinizi güncelleyebilirsiniz"
+        )
+
+    return update_parent_profile(db=db, user_id=user_id, profile_update=profile_update)
 
 @router.post("/iliskiler/ogrenci-ogretmen", status_code=status.HTTP_201_CREATED)
 def create_student_teacher(
@@ -189,35 +341,79 @@ def create_teacher_profile_for_user(
     
     return create_teacher_profile(db=db, profile=profile, user_id=user_id)
 
-@router.post("/{user_id}/veli-profili", response_model=ParentProfileRead)
-def create_parent_profile_for_user(
+
+# Öğrenci profili güncelleme endpointi
+@router.put("/{user_id}/ogrenci-profili", response_model=StudentProfileRead)
+def update_student_profile_for_user(
     user_id: int,
-    profile: ParentProfileCreate,
+    profile_update: StudentProfileUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     """
-    Veli profili oluştur (Sadece veliler için)
+    Öğrenci profili güncelle (Sadece öğrenci profili için)
+    - Öğrenci: Sadece kendi profilini güncelleyebilir
+    - Öğretmen: Sadece kendi öğrencilerinin profillerini güncelleyebilir
+    - Veli: Yetkisi yok
     """
-    # Profil oluşturulacak kullanıcıyı kontrol et
     db_user = get_user(db, user_id=user_id)
-    
-    # Sadece veliler için profil oluşturulabilir
-    if db_user.role != RoleEnum.parent:
+    if db_user.role != RoleEnum.student:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Sadece veli rollü kullanıcılar için profil oluşturulabilir"
+            detail="Sadece öğrenci rollü kullanıcılar için profil güncellenebilir"
         )
-    
-    # Yetki kontrolü: Sadece kendi profili
-    if current_user.id != user_id:
+
+    # Eğer giriş yapan kullanıcı öğrenci ise, sadece kendi profilini güncelleyebilir
+    if current_user.role == RoleEnum.student:
+        if current_user.id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Sadece kendi öğrenci profilinizi güncelleyebilirsiniz"
+            )
+    # Eğer giriş yapan kullanıcı öğretmen ise, sadece kendi öğrencilerinin profillerini güncelleyebilir
+    elif current_user.role == RoleEnum.teacher:
+        # Öğretmenin öğrencilerini al
+        teacher_students = get_teacher_students(db, teacher_id=current_user.id)
+        student_ids = [student.id for student in teacher_students]
+        if user_id not in student_ids:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Sadece kendi öğrencilerinizin profilini güncelleyebilirsiniz"
+            )
+    else:
+        # Veli veya diğer roller için yetki yok
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Sadece kendi profilinizi oluşturabilirsiniz"
+            detail="Bu işlem için yetkiniz yok"
         )
-    
-    return create_parent_profile(db=db, profile=profile, user_id=user_id)
 
+    return update_student_profile(db=db, user_id=user_id, profile_update=profile_update)
+
+@router.put("/{user_id}/ogretmen-profili", response_model=TeacherProfileRead)
+def update_teacher_profile_for_user(
+    user_id: int,
+    profile_update: TeacherProfileCreate,  # veya TeacherProfileUpdate şeman varsa onu kullan
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Öğretmen profili güncelle (Sadece öğretmen kendi profilini güncelleyebilir)
+    """
+    db_user = get_user(db, user_id=user_id)
+    if db_user.role != RoleEnum.teacher:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Sadece öğretmen rollü kullanıcılar için profil güncellenebilir"
+        )
+
+    # Sadece kendi profilini güncelleyebilir
+    if current_user.role != RoleEnum.teacher or current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Sadece kendi öğretmen profilinizi güncelleyebilirsiniz"
+        )
+
+    return update_teacher_profile(db=db, user_id=user_id, profile_update=profile_update)
 @router.get("/ogretmen/{teacher_id}/ogrenciler", response_model=List[UserRead])
 def read_teacher_students(
     teacher_id: int,

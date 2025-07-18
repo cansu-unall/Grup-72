@@ -4,7 +4,7 @@ from .schemas import (
     UserProfileBase, UserProfileCreate, UserProfileUpdate, UserProfileRead,
     ActivityBase, ActivityCreate, ActivityRead, ActivityUpdate,
     StudentTeacherCreate, ParentChildCreate,
-    StudentProfileBase, StudentProfileCreate, StudentProfileRead,
+    StudentProfileBase, StudentProfileCreate, StudentProfileRead, StudentProfileUpdate,
     TeacherProfileBase, TeacherProfileCreate, TeacherProfileRead,
     ParentProfileBase, ParentProfileCreate, ParentProfileRead
 )

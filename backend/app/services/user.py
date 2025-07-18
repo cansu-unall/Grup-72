@@ -5,7 +5,45 @@ from typing import List, Optional
 from ..models import User, StudentTeacher, ParentChild, RoleEnum
 from ..models import StudentProfile, TeacherProfile, ParentProfile
 from ..schemas import UserCreate, UserProfileCreate, UserUpdate
-from ..schemas import StudentProfileCreate, TeacherProfileCreate, ParentProfileCreate
+# ...existing code...
+from ..schemas import StudentProfileCreate, TeacherProfileCreate, ParentProfileCreate, StudentProfileUpdate
+from ..schemas import TeacherProfileCreate  # Eğer TeacherProfileUpdate şeman varsa onu da ekle
+from ..schemas import ParentProfileCreate  # Eğer ParentProfileUpdate şeman varsa onu da ekle
+
+# Öğretmen profili güncelleme servisi
+def update_teacher_profile(db: Session, user_id: int, profile_update: TeacherProfileCreate):  # TeacherProfileUpdate şeman varsa onu kullan
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
+    if db_user.role != RoleEnum.teacher:
+        raise HTTPException(status_code=400, detail="Bu kullanıcı bir öğretmen değil")
+    db_profile = db.query(TeacherProfile).filter(TeacherProfile.user_id == user_id).first()
+    if not db_profile:
+        raise HTTPException(status_code=404, detail="Öğretmen profili bulunamadı")
+    update_data = profile_update.dict(exclude_unset=True)
+    for field, value in update_data.items():
+        if hasattr(db_profile, field):
+            setattr(db_profile, field, value)
+    db.commit()
+    db.refresh(db_profile)
+    return db_profile
+# Öğrenci profili güncelleme servisi
+def update_student_profile(db: Session, user_id: int, profile_update: StudentProfileUpdate):
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
+    if db_user.role != RoleEnum.student:
+        raise HTTPException(status_code=400, detail="Bu kullanıcı bir öğrenci değil")
+    db_profile = db.query(StudentProfile).filter(StudentProfile.user_id == user_id).first()
+    if not db_profile:
+        raise HTTPException(status_code=404, detail="Öğrenci profili bulunamadı")
+    update_data = profile_update.dict(exclude_unset=True)
+    for field, value in update_data.items():
+        if hasattr(db_profile, field):
+            setattr(db_profile, field, value)
+    db.commit()
+    db.refresh(db_profile)
+    return db_profile
 from .auth import get_password_hash
 
 # Kullanıcı oluşturma servisi
@@ -198,6 +236,26 @@ def get_teacher_students(db: Session, teacher_id: int):
 
 # Ebeveynin çocuklarını getirme servisi
 def get_parent_children(db: Session, parent_id: int):
+    # ...existing code...
+    pass
+
+# Veli profili güncelleme servisi
+def update_parent_profile(db: Session, user_id: int, profile_update: ParentProfileCreate):  # ParentProfileUpdate şeman varsa onu kullan
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
+    if db_user.role != RoleEnum.parent:
+        raise HTTPException(status_code=400, detail="Bu kullanıcı bir veli değil")
+    db_profile = db.query(ParentProfile).filter(ParentProfile.user_id == user_id).first()
+    if not db_profile:
+        raise HTTPException(status_code=404, detail="Veli profili bulunamadı")
+    update_data = profile_update.dict(exclude_unset=True)
+    for field, value in update_data.items():
+        if hasattr(db_profile, field):
+            setattr(db_profile, field, value)
+    db.commit()
+    db.refresh(db_profile)
+    return db_profile
     parent = db.query(User).filter(User.id == parent_id, User.role == RoleEnum.parent).first()
     if not parent:
         raise HTTPException(status_code=404, detail="Ebeveyn bulunamadı")
