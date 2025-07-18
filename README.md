@@ -78,3 +78,34 @@ Toplam proje iş yükü 750 puan olarak planlanmıştır. 3 sprintte her bir spr
 - Mahmut Aktaş (Developer 1)
 - Emir Buğra Irmak (Developer 2)
 
+
+# Sprint 2 – Dyslexia AI
+
+
+## Tahmin Edilen Tamamlanacak Puan
+250 Puan
+
+## Tahmin Mantığı
+Toplam proje iş yükü başlangıçta **750 puan** olarak planlanmıştır.
+Bu iş yükü **3 sprint** süresince eşit şekilde dağılmıştır.
+Her sprint için **ortalama 250 puanlık gelişim** hedeflenmiştir.
+- **Sprint 1 tamamlandı → 250 puan**
+- **Sprint 2 tamamlandı → +250 puan**
+      ⟶ Toplamda **500 puan** ilerleme kaydedilmiştir.
+Daily Scrum
+### Daily Scrum – Sprint 2
+
+- Takım içi iletişim **aktif şekilde WhatsApp grubu** üzerinden yürütülmüştür. Her geliştirici kendi görevleriyle ilgili **günlük bilgilendirme ve destek mesajları** paylaşmıştır.
+- Özellikle backend geliştirme sürecinde **karşılaşılan teknik problemler**, çözüm yolları ve kod paylaşım stratejileri grup sohbetlerinde tartışılmıştır.
+- Haftalık değerlendirme toplantısı ise **Google Meet** üzerinden gerçekleştirilmiş, ekran paylaşımı ile son durumlar gözden geçirilmiştir.
+- Takım üyeleri sorumluluklarını yerine getirmiş ve belirlenen günlerde **kod paylaşımı, yorumlama ve test** süreçlerini yürütmüştür.
+
+ **Görsel Kanıtlar:**
+
+- [WhatsApp Yazışmaları 3](docs/daily_scrum_screenshots/Whatsapp3.png) & [WhatsApp Yazışmaları 4](docs/daily_scrum_screenshots/Whatsapp4.png)
+- [Google Meet ekran görüntüsü](docs/daily_scrum_screenshots/googlemeets1.png)
+
+
+
+
+
