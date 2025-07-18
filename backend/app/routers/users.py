@@ -223,14 +223,38 @@ def read_parent_children(
     """
     Ebeveynin çocuklarını getir
     """
-    # Sadece kendi çocukları veya yönetici
-    if current_user.id != parent_id and current_user.role not in [RoleEnum.teacher]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Başka bir ebeveynin çocuklarını göremezsiniz"
-        )
+    # Sadece kendi çocukları
+    if current_user.id == parent_id:
+        return get_parent_children(db=db, parent_id=parent_id)
     
-    return get_parent_children(db=db, parent_id=parent_id)
+    # Admin tüm ilişkileri görebilir
+    if current_user.role == RoleEnum.admin:
+        return get_parent_children(db=db, parent_id=parent_id)
+    
+    # Öğretmen sadece kendi öğrencilerinin velilerini görebilir
+    if current_user.role == RoleEnum.teacher:
+        # Bu velinin çocuklarını al
+        children = get_parent_children(db=db, parent_id=parent_id)
+        # Öğretmenin öğrencilerini al
+        teacher_students = get_teacher_students(db, teacher_id=current_user.id)
+        teacher_student_ids = [student.id for student in teacher_students]
+        
+        # Bu velinin çocuklarından herhangi biri öğretmenin öğrencisi mi?
+        accessible_children = [child for child in children if child.id in teacher_student_ids]
+        
+        if not accessible_children:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Bu velinin çocukları sizin öğrenciniz değil"
+            )
+        
+        return accessible_children
+    
+    # Diğer durumlar için erişim yok
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Bu bilgilere erişim yetkiniz yok"
+    )
 
 @router.get("/{user_id}", response_model=UserReadWithRelations)
 def read_user(
