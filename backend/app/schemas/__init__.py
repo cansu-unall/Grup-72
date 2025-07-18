@@ -1,5 +1,5 @@
 from .schemas import (
-    UserBase, UserCreate, UserRead, UserLogin, UserReadWithRelations,
+    UserBase, UserCreate, UserRead, UserLogin, UserReadWithRelations, UserUpdate,
     Token, TokenData, Role,
     UserProfileBase, UserProfileCreate, UserProfileUpdate, UserProfileRead,
     ActivityBase, ActivityCreate, ActivityRead, ActivityUpdate,

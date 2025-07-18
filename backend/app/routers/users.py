@@ -3,14 +3,14 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from ..services import (
-    create_user, get_user, get_users,  
+    create_user, get_user, get_users, update_user,  
     create_student_teacher_relation, create_parent_child_relation,
     get_teacher_students, get_parent_children,
     get_current_active_user, role_required,
     create_student_profile, create_teacher_profile, create_parent_profile
 )
 from ..schemas import (
-    UserCreate, UserRead, UserReadWithRelations,
+    UserCreate, UserRead, UserReadWithRelations, UserUpdate,
     StudentTeacherCreate, ParentChildCreate, Role,
     StudentProfileCreate, StudentProfileRead,
     TeacherProfileCreate, TeacherProfileRead,
@@ -38,6 +38,28 @@ def read_user_me(current_user: User = Depends(get_current_active_user)):
     Giriş yapmış kullanıcının bilgilerini getir
     """
     return current_user
+
+@router.put("/{user_id}", response_model=UserRead)
+def update_user_endpoint(
+    user_id: int,
+    user_update: UserUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Kullanıcı bilgilerini güncelle
+    - Kullanıcılar sadece kendi bilgilerini güncelleyebilir
+    - Admin tüm kullanıcıları güncelleyebilir
+    - Rol ve şifre bu endpoint ile güncellenemez (güvenlik nedeniyle)
+    """
+    # Yetki kontrolü: Sadece kendi profili veya admin
+    if current_user.id != user_id and current_user.role != RoleEnum.admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Sadece kendi profilinizi güncelleyebilirsiniz"
+        )
+    
+    return update_user(db=db, user_id=user_id, user_update=user_update)
 
 @router.post("/iliskiler/ogrenci-ogretmen", status_code=status.HTTP_201_CREATED)
 def create_student_teacher(

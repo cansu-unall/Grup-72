@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from ..models import User, StudentTeacher, ParentChild, RoleEnum
 from ..models import StudentProfile, TeacherProfile, ParentProfile
-from ..schemas import UserCreate, UserProfileCreate
+from ..schemas import UserCreate, UserProfileCreate, UserUpdate
 from ..schemas import StudentProfileCreate, TeacherProfileCreate, ParentProfileCreate
 from .auth import get_password_hash
 
@@ -90,6 +90,47 @@ def get_users(db: Session, skip: int = 0, limit: int = 100, role: Optional[RoleE
             _ = user.parent_profile
     
     return users
+
+# Kullanıcı güncelleme servisi
+def update_user(db: Session, user_id: int, user_update: UserUpdate):
+    # Kullanıcı kontrolü
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
+    
+    # Güncellenecek alanları kontrol et
+    update_data = user_update.dict(exclude_unset=True)
+    
+    # Email kontrolü (eğer güncelleniyorsa)
+    if "email" in update_data and update_data["email"] != db_user.email:
+        existing_email = db.query(User).filter(
+            User.email == update_data["email"], 
+            User.id != user_id
+        ).first()
+        if existing_email:
+            raise HTTPException(status_code=400, detail="Bu email zaten kullanımda")
+    
+    # Kullanıcı adı kontrolü (eğer güncelleniyorsa)
+    if "username" in update_data and update_data["username"] != db_user.username:
+        existing_username = db.query(User).filter(
+            User.username == update_data["username"], 
+            User.id != user_id
+        ).first()
+        if existing_username:
+            raise HTTPException(status_code=400, detail="Bu kullanıcı adı zaten kullanımda")
+    
+    # Güncellemeleri uygula
+    for field, value in update_data.items():
+        if hasattr(db_user, field):
+            setattr(db_user, field, value)
+    
+    # updated_at alanını güncelle
+    from datetime import datetime
+    db_user.updated_at = datetime.now()
+    
+    db.commit()
+    db.refresh(db_user)
+    return db_user
 
 # Öğretmen-öğrenci ilişkisi oluşturma servisi
 def create_student_teacher_relation(db: Session, student_id: int, teacher_id: int):

@@ -27,6 +27,14 @@ class UserCreate(UserBase):
             raise ValueError('Şifre en az 8 karakter olmalıdır')
         return v
 
+# User update schema
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    email: Optional[EmailStr] = None
+    full_name: Optional[str] = None
+    # Not: role güncellenmez, güvenlik nedeniyle ayrı endpoint gerekir
+    # password güncellenmez, ayrı endpoint gerekir
+
 # User login schema
 class UserLogin(BaseModel):
     email: EmailStr
@@ -59,7 +67,7 @@ class StudentProfileRead(StudentProfileBase):
     user_id: int
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Teacher profile schema
 class TeacherProfileBase(UserProfileBase):
@@ -76,7 +84,7 @@ class TeacherProfileRead(TeacherProfileBase):
     user_id: int
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Parent profile schema
 class ParentProfileBase(UserProfileBase):
@@ -90,7 +98,7 @@ class ParentProfileRead(ParentProfileBase):
     user_id: int
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Deprecated: Eski kod ile uyumluluk için (kaldırılacak)
 class UserProfileCreate(UserProfileBase):
@@ -110,7 +118,7 @@ class UserProfileRead(UserProfileBase):
     dyslexia_level: Optional[str] = None
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # User read schema
 class UserRead(UserBase):
@@ -122,7 +130,7 @@ class UserRead(UserBase):
     parent_profile: Optional[ParentProfileRead] = None
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # User read schema with relations
 class UserReadWithRelations(UserRead):
@@ -133,7 +141,7 @@ class UserReadWithRelations(UserRead):
     related_parents: Optional[List["UserRead"]] = None   # Öğrenci için: veliler
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Pydantic'in recursive modelleri çözebilmesi için gereken forward reference
 UserReadWithRelations.update_forward_refs()
@@ -171,7 +179,7 @@ class ActivityRead(ActivityBase):
     completed_at: Optional[datetime] = None
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Student teacher relationship schema
 class StudentTeacherCreate(BaseModel):
