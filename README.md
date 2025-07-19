@@ -79,6 +79,8 @@ Toplam proje iş yükü 750 puan olarak planlanmıştır. 3 sprintte her bir spr
 - Emir Buğra Irmak (Developer 2)
 
 
+
+
 # Sprint 2 – Dyslexia AI
 
 
@@ -92,8 +94,8 @@ Her sprint için **ortalama 250 puanlık gelişim** hedeflenmiştir.
 - **Sprint 1 tamamlandı → 250 puan**
 - **Sprint 2 tamamlandı → +250 puan**
       ⟶ Toplamda **500 puan** ilerleme kaydedilmiştir.
-Daily Scrum
-### Daily Scrum – Sprint 2
+
+## Daily Scrum 
 
 - Takım içi iletişim **aktif şekilde WhatsApp grubu** üzerinden yürütülmüştür. Her geliştirici kendi görevleriyle ilgili **günlük bilgilendirme ve destek mesajları** paylaşmıştır.
 - Özellikle backend geliştirme sürecinde **karşılaşılan teknik problemler**, çözüm yolları ve kod paylaşım stratejileri grup sohbetlerinde tartışılmıştır.
@@ -105,6 +107,33 @@ Daily Scrum
 - [WhatsApp Yazışmaları 3](docs/daily_scrum_screenshots/Whatsapp3.png) & [WhatsApp Yazışmaları 4](docs/daily_scrum_screenshots/Whatsapp4.png)
 - [Google Meet ekran görüntüsü](docs/daily_scrum_screenshots/googlemeets1.png)
 
+ ## Sprint Board Updates
+
+## **Sprint Board & Proje Takip Sistemleri Genel Bilgilendirme**
+
+DyslexiAI projesi kapsamında Sprint 2 süresince proje yönetimi ve görev takibi aşağıdaki araçlar ve sistemler kullanılarak yürütülmüştür:
+
+###  **Görev Takip ve Yönetim Ortamı: Notion**
+
+Tüm görevler, sorumluluklar, durum güncellemeleri ve proje belgeleri Notion platformu üzerinden koordine edilmiştir. Takım üyeleri, görevlerini "To Do", "In Progress" ve "Done" şeklinde sınıflandırarak sprint süreci boyunca şeffaf bir şekilde ilerleme sağlamıştır.
+
+###  **Sprint Board Güncellemeleri**
+
+- Sprint 2 süresince tamamlanması hedeflenen tüm görevler Sprint Board üzerinde tanımlanmıştır.
+- Her bir görev; sorumlusu, öncelik durumu ve ilerleme aşamasıyla birlikte ayrıntılı olarak etiketlenmiştir.
+- Board üzerindeki kartlar günlük olarak güncellenmiş ve görev ilerlemeleri görsel olarak takip edilmiştir.
+
+**Notion Sprint Board Ekran Görüntüleri:**
+ 
+ -[Projects](docs/Notion - Projects.png)
+ -[Proje Döküman Tablosu](docs/Notion - Proje Döküman Tablosu.png)
+ -[Hata&Sorun Takip Tablosu](docs/Notion - Hata&Sorun Takip Tablosu.png)
+ -[Hedef Takip Tablosu](docs/Notion - Hedef Takip Tablosu.png)
+ -[Ürün Geliştirme Talepleri](docs/Notion - Ürün Geliştirme Talepleri.png)
+ 
+**Notion Sprint Board Backlog Linki:**
+
+https://bit.ly/Grup-72
 
 
 
