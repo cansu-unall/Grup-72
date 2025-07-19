@@ -9,7 +9,8 @@ from .user import (
     get_teacher_students, get_parent_children,
     create_student_profile, create_teacher_profile, create_parent_profile,
     update_student_profile, update_teacher_profile, update_parent_profile,
-    delete_student_profile, delete_teacher_profile, delete_parent_profile
+    delete_student_profile, delete_teacher_profile, delete_parent_profile,
+    delete_student_teacher_relation, delete_parent_child_relation
 )
 from .activity import (
     create_activity, get_activity, get_student_activities, update_activity, delete_activity

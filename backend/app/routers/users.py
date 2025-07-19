@@ -9,7 +9,8 @@ from ..services import (
     get_current_active_user, role_required,
     create_student_profile, create_teacher_profile, create_parent_profile,
     update_student_profile, update_teacher_profile, update_parent_profile,
-    delete_student_profile, delete_teacher_profile, delete_parent_profile
+    delete_student_profile, delete_teacher_profile, delete_parent_profile,
+    delete_student_teacher_relation, delete_parent_child_relation
 )
 
 from ..schemas import (
@@ -49,6 +50,33 @@ router = APIRouter(
     tags=["kullanicilar"],
     responses={404: {"description": "Kullanıcı bulunamadı"}},
 )
+
+
+# Öğrenci-öğretmen ilişki silme endpointi
+@router.delete("/iliskiler/ogrenci-ogretmen", status_code=status.HTTP_200_OK)
+def delete_student_teacher(
+    student_id: int = Query(..., description="Öğrenci ID"),
+    teacher_id: int = Query(..., description="Öğretmen ID"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(role_required([RoleEnum.teacher, RoleEnum.admin]))
+):
+    # Sadece kendi öğrencisiyle olan ilişkiyi silebilir veya admin ise
+    if current_user.role == RoleEnum.teacher and current_user.id != teacher_id:
+        raise HTTPException(status_code=403, detail="Sadece kendi öğrencinizle olan ilişkiyi silebilirsiniz")
+    return delete_student_teacher_relation(db=db, student_id=student_id, teacher_id=teacher_id)
+
+# Öğrenci-veli ilişki silme endpointi
+@router.delete("/iliskiler/ogrenci-veli", status_code=status.HTTP_200_OK)
+def delete_parent_child(
+    child_id: int = Query(..., description="Çocuk (öğrenci) ID"),
+    parent_id: int = Query(..., description="Veli ID"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(role_required([RoleEnum.parent]))
+):
+    # Sadece kendi çocuğu ile olan ilişkiyi silebilir
+    if current_user.id != parent_id:
+        raise HTTPException(status_code=403, detail="Sadece kendi çocuğunuzla olan ilişkiyi silebilirsiniz")
+    return delete_parent_child_relation(db=db, parent_id=parent_id, child_id=child_id)
 
 @router.post("/kayit", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 def register_user(user: UserCreate, db: Session = Depends(get_db)):

@@ -10,6 +10,30 @@ from ..schemas import StudentProfileCreate, TeacherProfileCreate, ParentProfileC
 from ..schemas import TeacherProfileCreate  # Eğer TeacherProfileUpdate şeman varsa onu da ekle
 from ..schemas import ParentProfileCreate  # Eğer ParentProfileUpdate şeman varsa onu da ekle
 
+# Öğrenci-Öğretmen ilişki silme servisi
+def delete_student_teacher_relation(db: Session, student_id: int, teacher_id: int):
+    relation = db.query(StudentTeacher).filter(
+        StudentTeacher.student_id == student_id,
+        StudentTeacher.teacher_id == teacher_id
+    ).first()
+    if not relation:
+        raise HTTPException(status_code=404, detail="İlişki bulunamadı")
+    db.delete(relation)
+    db.commit()
+    return {"detail": "İlişki başarıyla silindi"}
+
+# Öğrenci-Veli ilişki silme servisi
+def delete_parent_child_relation(db: Session, parent_id: int, child_id: int):
+    relation = db.query(ParentChild).filter(
+        ParentChild.parent_id == parent_id,
+        ParentChild.child_id == child_id
+    ).first()
+    if not relation:
+        raise HTTPException(status_code=404, detail="İlişki bulunamadı")
+    db.delete(relation)
+    db.commit()
+    return {"detail": "İlişki başarıyla silindi"}
+
 # Öğrenci profili silme servisi
 def delete_student_profile(db: Session, user_id: int):
     db_user = db.query(User).filter(User.id == user_id).first()
@@ -278,8 +302,15 @@ def get_teacher_students(db: Session, teacher_id: int):
 
 # Ebeveynin çocuklarını getirme servisi
 def get_parent_children(db: Session, parent_id: int):
-    # ...existing code...
-    pass
+    parent = db.query(User).filter(User.id == parent_id, User.role == RoleEnum.parent).first()
+    if not parent:
+        raise HTTPException(status_code=404, detail="Ebeveyn bulunamadı")
+    child_relations = db.query(ParentChild).filter(ParentChild.parent_id == parent_id).all()
+    child_ids = [relation.child_id for relation in child_relations]
+    if not child_ids:
+        return []
+    children = db.query(User).filter(User.id.in_(child_ids)).all()
+    return children
 
 # Veli profili güncelleme servisi
 def update_parent_profile(db: Session, user_id: int, profile_update: ParentProfileCreate):  # ParentProfileUpdate şeman varsa onu kullan
