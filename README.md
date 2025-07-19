@@ -125,16 +125,105 @@ Tüm görevler, sorumluluklar, durum güncellemeleri ve proje belgeleri Notion p
 
 **Notion Sprint Board Ekran Görüntüleri:**
  
- -[Projects](docs/Notion - Projects.png)
- -[Proje Döküman Tablosu](docs/Notion - Proje Döküman Tablosu.png)
- -[Hata&Sorun Takip Tablosu](docs/Notion - Hata&Sorun Takip Tablosu.png)
- -[Hedef Takip Tablosu](docs/Notion - Hedef Takip Tablosu.png)
- -[Ürün Geliştirme Talepleri](docs/Notion - Ürün Geliştirme Talepleri.png)
+ -[Projects](docs/Notion_Projects.png)
+ -[Proje Döküman Tablosu](docs/Notion_Proje_Döküman_Tablosu.png)
+ -[Hedef Takip Tablosu](docs/Notion_Hedef_Takip_Tablosu.png)
+ -[Hata&Sorun Takip Tablosu](docs/Notion_Hata&Sorun_Takip_Tablosu.png)
+ -[Ürün Geliştirme Talepleri](docs/Notion_Ürün_Geliştirme_Talepleri.png)
  
 **Notion Sprint Board Backlog Linki:**
 
 https://bit.ly/Grup-72
 
+## Ürün Durumu Ekran Görüntüleri
+Sprint 2 sonunda geliştirilen işlevsellikler ve kullanıcı arayüzlerine dair ekranlar aşağıda listelenmiştir. Geliştirmeler hem backend API düzeyinde hem de frontend kullanıcı deneyimi düzeyinde ilerletilmiştir.
 
+**Geliştirilen Ekranlar ve Özellikler:**
 
+-  **Register ve Login Ekranları:**
+    - Kullanıcılar e-posta ve şifre bilgileriyle kayıt olup giriş yapabilmektedir.
+    - Roller (öğrenci, öğretmen, veli) seçilebilir şekilde arayüzde tanımlanmıştır.
+    - [Giriş Yap Ekranı](docs/Giriş_Yap_Ekranı.png) & [Kayıt Ol Ekranı](docs/Kayıt_Ol_Ekranı.png)
+-  **Rol Bazlı Yönlendirme:**
+    - Giriş yapan kullanıcı rolüne göre (öğrenci, öğretmen, veli) sistem uygun panele yönlendirme yapmaktadır.
+    - Her panel, rolün yetkisine uygun içerikler sunmaktadır.
+        - [Öğrenci paneli](docs/Öğrenci_Paneli.png) → Okuma alıştırmaları ve gelişim takibi
+        - [Öğretmen paneli](docs/Öğretmen_Paneli.png) → Öğrenci yönetimi ve görev atama
+        - [Veli paneli](docs/Veli_Paneli.png) → Çocuklarının ilerlemesini izleme
+-  [**/me endpoint’i entegrasyonu:**](docs/Login-register-endpoints.png)
+    - Kullanıcının giriş yaptıktan sonra kendi bilgilerini güvenli biçimde görüntülemesi sağlanmıştır.
+    - API Swagger dokümantasyonunda doğrulanmış ve test edilmiştir.
+-  [**Profil oluşturma endpoint’leri:**](docs/Profile-activity-endpoints.png)
+    - Her rol için (öğrenci, öğretmen, veli) özel profil oluşturma API’leri geliştirildi ve test edildi.
+    - Rollere özel kullanıcı profili yönetimi desteklenmektedir.
+-  [**Aktivite yönetimi için temel API’ler:**](docs/Default-endpoints.png)
+    - Öğrencilere atanabilecek aktiviteler için CRUD işlemlerini destekleyen uç noktalar geliştirildi.
+
+## Sprint Review
+
+- **Sprint 2 kapsamında belirlenen hedeflerin tamamı başarıyla tamamlanmıştır.**
+    
+     Geliştirilen başlıca fonksiyonlar:
+    
+    - **Backend Geliştirmeleri:**
+        - Kullanıcı yönetimi: Kayıt ve giriş işlemleri
+        - JWT tabanlı kimlik doğrulama
+        - Şifreleme (Password hashing)
+        - Rol bazlı yetkilendirme (öğrenci, öğretmen, veli)
+    - **Frontend Geliştirmeleri:**
+        - Register/Login sayfaları
+        - Context API ile oturum yönetimi
+        - ProtectedRoute sistemi ile güvenli yönlendirme
+        - Kullanıcı geri bildirim bileşenleri (Spinner, uyarı kutuları vb.)
+- **Planlanan Sprint kapsamının ötesinde tamamlananlar:**
+    - Öğretmen-öğrenci ve veli-çocuk ilişki altyapısı geliştirildi
+    - Kullanıcı rollerine göre profil oluşturma endpoint’lerinin temel versiyonu yazıldı
+- **Takım Performansı:**
+    - Tüm ekip üyeleri görevlerini zamanında tamamladı.
+    - Kodlar düzenli olarak versiyon kontrol sistemi üzerinden (GitHub/GitLab) paylaşıldı.
+- **Sprint 2 İlerleme Grafiği:**
+
+ Aşağıdaki grafik, 08.07.2025–20.07.2025 tarihleri arasında ekip tarafından kazanılan toplam puanların zaman içindeki dağılımını göstermektedir:
+
+<img width="808" height="499" alt="image" src="https://github.com/user-attachments/assets/b89c9157-97f2-433e-aa04-157ed95c512c" />
+
+Grafikte de görüldüğü üzere, Sprint'in ikinci yarısında ciddi bir ivme kazanılmış ve toplamda **250 puanlık iş yükü başarıyla tamamlanmıştır.**
+
+## Sprint Retrospective
+
+### İyi Gidenler:
+
+- Teknik iş bölümü netti, sorumluluklar açık şekilde paylaşıldı.
+- İletişim kanalları (WhatsApp, Meet, Notion) aktif ve düzenli kullanıldı.
+- Backend ve frontend tarafları senkron ilerledi.
+
+### Zorluklar:
+
+- Alembic migration hataları SQLAlchemy ile yaşandı.
+- Kullanıcı rolleri arasındaki ilişkiler tahmin edilenden daha karmaşık çıktı.
+- Bazı küçük hatalar frontend’de hata mesajlarının kaybolmasına neden oldu (çözüldü).
+- Başlangıçta kolay görünen görevler detaylarda zaman aldı.
+
+### Alınan İyileştirme Kararları:
+
+- Mini retrospektifler her cuma 10 dakikalık oturumlarla yapılacak.
+- Takım üyeleri haftada en az bir kez teknik dışı gözlem/öneri paylaşacak.
+
+### Sprint 2 Katılanları: 
+- Ayşe Cansu Ünal - Scrum Master
+- Ezgi Derya Özkan - Product Owner
+- Mahmut Aktaş - Developer 1
+- Emir Buğra Irmak - Developer 2 
+
+## Sprint 2 Notları
+
+Sprint 2'nin ana odağı, projenin teknik altyapısını oluşturarak kullanıcıların sisteme kayıt olması, giriş yapması ve rollerine göre yönlendirilmesini sağlamaktı. Bu hedefe ulaşmak için backend tarafında kimlik doğrulama (JWT), kullanıcı yönetimi, veri modelleri ve rol tabanlı erişim kontrolleri geliştirildi.
+
+Takım, sprint boyunca düzenli olarak WhatsApp ve Google Meet üzerinden iletişim halinde kaldı. Sürekli fikir alışverişi yapıldı, görevler bireysel sorumluluklara bölündü. Backend tarafında planlanan tüm temel fonksiyonlar başarıyla geliştirildi. Hatta bazı plan dışı ek özellikler (ilişkili kullanıcı rolleri, profil modelleri) de tamamlandı.
+
+Sprint başında basit görünen bazı görevlerin, geliştirme aşamasında daha fazla zaman aldığı fark edildi. Bu durum sprint süresince zaman yönetimini etkileyebilirdi; ancak takım içerisindeki hızlı koordinasyon ve destek sayesinde aksamadan ilerleme sağlandı.
+
+Sprint boyunca herkesin katkısı dengeliydi. Geliştirilen her özellik Notion üzerinden takip edildi ve kodlar GitHub’a düzenli olarak yüklendi.
+
+Sprint 2 sonunda ortaya çıkan sağlam altyapı, projenin yapay zeka ve disleksi analiz aşamasına geçişi için güçlü bir temel oluşturdu.
 
