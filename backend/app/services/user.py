@@ -6,9 +6,82 @@ from ..models import User, StudentTeacher, ParentChild, RoleEnum
 from ..models import StudentProfile, TeacherProfile, ParentProfile
 from ..schemas import UserCreate, UserProfileCreate, UserUpdate
 # ...existing code...
+
 from ..schemas import StudentProfileCreate, TeacherProfileCreate, ParentProfileCreate, StudentProfileUpdate
 from ..schemas import TeacherProfileCreate  # Eğer TeacherProfileUpdate şeman varsa onu da ekle
 from ..schemas import ParentProfileCreate  # Eğer ParentProfileUpdate şeman varsa onu da ekle
+
+# Kullanıcı ve ilişkili verileri silme servisi.
+def delete_user_and_relations(db: Session, user_id: int):
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
+
+    # Öğrenci ise ilişkileri ve profilini sil
+    if db_user.role == RoleEnum.student:
+        # Öğrenci-öğretmen ilişkileri
+        db.query(StudentTeacher).filter(StudentTeacher.student_id == user_id).delete()
+        # Öğrenci-veli ilişkileri
+        db.query(ParentChild).filter(ParentChild.child_id == user_id).delete()
+        # Öğrenci profili
+        db.query(StudentProfile).filter(StudentProfile.user_id == user_id).delete()
+    # Öğretmen ise ilişkileri ve profilini sil
+    elif db_user.role == RoleEnum.teacher:
+        db.query(StudentTeacher).filter(StudentTeacher.teacher_id == user_id).delete()
+        db.query(TeacherProfile).filter(TeacherProfile.user_id == user_id).delete()
+    # Veli ise ilişkileri ve profilini sil
+    elif db_user.role == RoleEnum.parent:
+        db.query(ParentChild).filter(ParentChild.parent_id == user_id).delete()
+        db.query(ParentProfile).filter(ParentProfile.user_id == user_id).delete()
+
+    # Son olarak kullanıcıyı sil
+    db.delete(db_user)
+    db.commit()
+    return {"detail": "Kullanıcı ve ilişkili veriler başarıyla silindi."}
+
+# Tüm Öğrenci-Öğretmen ilişkilerini getirme servisi
+def get_all_student_teacher_relations(db: Session):
+    relations = db.query(StudentTeacher).all()
+    result = []
+    for rel in relations:
+        student = db.query(User).filter(User.id == rel.student_id).first()
+        teacher = db.query(User).filter(User.id == rel.teacher_id).first()
+        result.append({
+            "student": {
+                "id": student.id,
+                "full_name": student.full_name,
+                "email": student.email
+            },
+            "teacher": {
+                "id": teacher.id,
+                "full_name": teacher.full_name,
+                "email": teacher.email
+            },
+            "created_at": rel.created_at
+        })
+    return result
+
+# Tüm Veli-Çocuk ilişkilerini getirme servisi
+def get_all_parent_child_relations(db: Session):
+    relations = db.query(ParentChild).all()
+    result = []
+    for rel in relations:
+        parent = db.query(User).filter(User.id == rel.parent_id).first()
+        child = db.query(User).filter(User.id == rel.child_id).first()
+        result.append({
+            "parent": {
+                "id": parent.id,
+                "full_name": parent.full_name,
+                "email": parent.email
+            },
+            "child": {
+                "id": child.id,
+                "full_name": child.full_name,
+                "email": child.email
+            },
+            "created_at": rel.created_at
+        })
+    return result
 
 # Öğrenci-Öğretmen ilişki silme servisi
 def delete_student_teacher_relation(db: Session, student_id: int, teacher_id: int):

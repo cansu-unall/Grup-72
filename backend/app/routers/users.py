@@ -10,7 +10,8 @@ from ..services import (
     create_student_profile, create_teacher_profile, create_parent_profile,
     update_student_profile, update_teacher_profile, update_parent_profile,
     delete_student_profile, delete_teacher_profile, delete_parent_profile,
-    delete_student_teacher_relation, delete_parent_child_relation
+    delete_student_teacher_relation, delete_parent_child_relation,
+    get_all_student_teacher_relations, get_all_parent_child_relations
 )
 
 from ..schemas import (
@@ -50,6 +51,28 @@ router = APIRouter(
     tags=["kullanicilar"],
     responses={404: {"description": "Kullanıcı bulunamadı"}},
 )
+
+# Tüm öğrenci-öğretmen ilişkilerini listeleyen endpoint (Sadece admin)
+@router.get("/iliskiler/ogrenci-ogretmen", status_code=status.HTTP_200_OK)
+def list_student_teacher_relations(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(role_required([RoleEnum.admin]))
+):
+    """
+    Tüm öğrenci-öğretmen ilişkilerini listeler (Sadece admin erişebilir)
+    """
+    return get_all_student_teacher_relations(db)
+
+# Tüm veli-çocuk ilişkilerini listeleyen endpoint (Sadece admin)
+@router.get("/iliskiler/veli-cocuk", status_code=status.HTTP_200_OK)
+def list_parent_child_relations(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(role_required([RoleEnum.admin]))
+):
+    """
+    Tüm veli-çocuk ilişkilerini listeler (Sadece admin erişebilir)
+    """
+    return get_all_parent_child_relations(db)
 
 
 # Öğrenci-öğretmen ilişki silme endpointi
