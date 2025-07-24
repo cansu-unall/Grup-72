@@ -130,5 +130,8 @@ class Activity(Base):
     feedback = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.now)
     completed_at = Column(DateTime, nullable=True)
-    
+    # Quiz için cevaplar
+    student_answers = Column(Text, nullable=True)  # JSON string olarak tutulacak
+    correct_answers = Column(Text, nullable=True)  # JSON string olarak tutulacak
+
     student = relationship("User", back_populates="student_activities")

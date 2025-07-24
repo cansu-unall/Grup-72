@@ -5,6 +5,7 @@ from typing import List, Optional
 
 from ..models import Activity, User, RoleEnum, StudentTeacher
 from ..schemas import ActivityCreate, ActivityUpdate, ActivityRead
+from ..schemas import AktiviteTamamlaRequest
 
 # Aktivite oluşturma servisi
 def create_activity(db: Session, activity: ActivityCreate):
@@ -117,3 +118,78 @@ def search_teacher_activities(
     if difficulty_level is not None:
         query = query.filter(Activity.difficulty_level == difficulty_level)
     return query.all()
+
+# Öğrenci ilerleme raporu servisi
+def get_student_progress_report(db: Session, student_id: int):
+    # Öğrenciye ait aktiviteleri getir
+    activities = db.query(Activity).filter(Activity.student_id == student_id).order_by(Activity.created_at.desc()).all()
+    if not activities:
+        return None
+
+    tamamlanan = [a for a in activities if a.completed]
+    skorlar = [a.score for a in tamamlanan if a.score is not None]
+
+    toplam_tamamlanan = len(tamamlanan)
+    ortalama_skor = sum(skorlar) / len(skorlar) if skorlar else None
+    en_yuksek_skor = max(skorlar) if skorlar else None
+    en_dusuk_skor = min(skorlar) if skorlar else None
+
+    # Son 10 aktivite
+    son_10 = activities[:10]
+    progress_over_time = [
+        {
+            "id": a.id,
+            "created_at": a.created_at,
+            "score": a.score,
+            "difficulty_level": a.difficulty_level
+        }
+        for a in son_10
+    ]
+
+    return {
+        "total_completed": toplam_tamamlanan,
+        "average_score": ortalama_skor,
+        "max_score": en_yuksek_skor,
+        "min_score": en_dusuk_skor,
+        "progress_over_time": progress_over_time
+    }
+
+# Öğrencinin kendi aktivitesini tamamlaması için servis
+def complete_activity_by_student(db: Session, activity_id: int, user_id: int, tamamla_data: AktiviteTamamlaRequest):
+    activity = db.query(Activity).filter(Activity.id == activity_id).first()
+    if not activity:
+        raise HTTPException(status_code=404, detail="Aktivite bulunamadı")
+    if activity.student_id != user_id:
+        raise HTTPException(status_code=403, detail="Sadece kendi aktivitenizi tamamlayabilirsiniz.")
+    if activity.completed:
+        raise HTTPException(status_code=400, detail="Bu aktivite zaten tamamlanmış.")
+
+    activity.completed = True
+    activity.feedback = tamamla_data.feedback
+    activity.completed_at = datetime.now()
+
+    # Otomatik skor hesaplama (örnek: quiz için)
+    if activity.activity_type == "quiz":
+        activity.score = calculate_quiz_score(activity)
+    else:
+        activity.score = None
+
+    db.commit()
+    db.refresh(activity)
+    return activity
+
+# Otomatik skor hesaplama fonksiyonu
+def calculate_quiz_score(activity):
+    # Quiz cevapları ve doğru cevaplar karşılaştırılır
+    # Cevaplar JSON string olarak tutuluyor
+    import json
+    try:
+        student_answers = json.loads(activity.student_answers) if activity.student_answers else []
+        correct_answers = json.loads(activity.correct_answers) if activity.correct_answers else []
+    except Exception:
+        return 0
+    if not student_answers or not correct_answers or len(correct_answers) != 5:
+        return 0
+    dogru_sayisi = sum(1 for s, c in zip(student_answers, correct_answers) if s == c)
+    skor = int((dogru_sayisi / 5) * 100)
+    return skor

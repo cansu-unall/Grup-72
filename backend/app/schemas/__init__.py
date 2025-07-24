@@ -6,5 +6,7 @@ from .schemas import (
     StudentTeacherCreate, ParentChildCreate,
     StudentProfileBase, StudentProfileCreate, StudentProfileRead, StudentProfileUpdate,
     TeacherProfileBase, TeacherProfileCreate, TeacherProfileRead,
-    ParentProfileBase, ParentProfileCreate, ParentProfileRead
+    ParentProfileBase, ParentProfileCreate, ParentProfileRead,
+    StudentProgressReport, ProgressItem,
+    AktiviteTamamlaRequest
 )

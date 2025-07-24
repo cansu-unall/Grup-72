@@ -187,6 +187,27 @@ class ActivityRead(ActivityBase):
     class Config:
         from_attributes = True
 
+# Öğrenci ilerleme raporu response modeli
+from pydantic import BaseModel
+from typing import List, Optional
+
+class ProgressItem(BaseModel):
+    id: int
+    created_at: datetime
+    score: Optional[int] = None
+    difficulty_level: int
+
+class StudentProgressReport(BaseModel):
+    total_completed: int
+    average_score: Optional[float] = None
+    max_score: Optional[int] = None
+    min_score: Optional[int] = None
+    progress_over_time: List[ProgressItem]
+
+# Aktiviteyi tamamlamak için öğrenciye özel request modeli
+class AktiviteTamamlaRequest(BaseModel):
+    feedback: Optional[str] = None
+
 # Student teacher relationship schema
 class StudentTeacherCreate(BaseModel):
     student_id: int
