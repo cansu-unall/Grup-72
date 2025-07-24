@@ -121,7 +121,7 @@ class Activity(Base):
     id = Column(Integer, primary_key=True, index=True)
     student_id = Column(Integer, ForeignKey("users.id"))
     activity_type = Column(String, nullable=False)
-    title = Column(String, nullable=False)
+    title = Column(Text, nullable=False)
     description = Column(Text, nullable=True)
     content = Column(Text, nullable=False)
     difficulty_level = Column(Integer, nullable=False)

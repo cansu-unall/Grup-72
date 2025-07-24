@@ -4,8 +4,11 @@ from typing import List, Optional
 
 from ..services import (
     create_activity, get_activity, get_student_activities, update_activity, delete_activity,
+    get_teacher_activities,
+    search_teacher_activities,
     get_current_active_user, role_required
 )
+
 from ..schemas import (
     ActivityCreate, ActivityRead, ActivityUpdate
 )
@@ -17,6 +20,43 @@ router = APIRouter(
     tags=["aktiviteler"],
     responses={404: {"description": "Aktivite bulunamadı"}},
 )
+
+# Aktivite arama endpoint'i (Sadece öğretmenler)
+@router.get("/arama", response_model=List[ActivityRead])
+def search_activities(
+    title: Optional[str] = Query(None),
+    description: Optional[str] = Query(None),
+    difficulty_level: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(role_required([RoleEnum.teacher]))
+):
+    """
+    Öğretmen kendi ilişkili olduğu öğrenciler için aktivitelerde arama yapar.
+    Sadece öğretmenler erişebilir.
+    """
+    return search_teacher_activities(
+        db=db,
+        teacher_id=current_user.id,
+        title=title,
+        description=description,
+        difficulty_level=difficulty_level
+    )
+
+@router.get("/ogretmen/{teacher_id}", response_model=List[ActivityRead])
+def read_teacher_activities(
+    teacher_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Belirli bir öğretmenin kendi ilişkili olduğu öğrenciler için oluşturduğu aktiviteleri listeler.
+    Sadece öğretmen kendi aktivitelerini görebilir.
+    """
+    # JWT doğrulama: Sadece kendi aktivitelerini görebilsin
+    if current_user.role != RoleEnum.teacher or current_user.id != teacher_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sadece kendi aktivitelerinizi görebilirsiniz.")
+    activities = get_teacher_activities(db, teacher_id)
+    return activities
 
 @router.post("/", response_model=ActivityRead, status_code=status.HTTP_201_CREATED)
 def create_new_activity(
@@ -136,3 +176,5 @@ def delete_existing_activity(
     Aktivite sil (Sadece öğretmenler)
     """
     return delete_activity(db=db, activity_id=activity_id)
+
+

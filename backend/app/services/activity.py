@@ -3,8 +3,8 @@ from fastapi import HTTPException, status
 from datetime import datetime
 from typing import List, Optional
 
-from ..models import Activity, User, RoleEnum
-from ..schemas import ActivityCreate, ActivityUpdate
+from ..models import Activity, User, RoleEnum, StudentTeacher
+from ..schemas import ActivityCreate, ActivityUpdate, ActivityRead
 
 # Aktivite oluşturma servisi
 def create_activity(db: Session, activity: ActivityCreate):
@@ -84,3 +84,36 @@ def delete_activity(db: Session, activity_id: int):
     db.delete(db_activity)
     db.commit()
     return {"detail": "Aktivite başarıyla silindi"}
+
+# Öğretmenin kendi ilişkili öğrencileri için oluşturduğu aktiviteleri listeleyen servis
+def get_teacher_activities(db: Session, teacher_id: int) -> List[ActivityRead]:
+    # Öğretmenin ilişkili olduğu öğrencileri bul
+    student_ids = db.query(StudentTeacher.student_id).filter(StudentTeacher.teacher_id == teacher_id).all()
+    student_ids = [sid[0] for sid in student_ids]
+    if not student_ids:
+        return []
+    # Öğretmenin oluşturduğu aktiviteleri getir
+    activities = db.query(Activity).filter(Activity.student_id.in_(student_ids)).all()
+    return activities
+
+# Öğretmenin aktivitelerinde dinamik arama servisi
+def search_teacher_activities(
+    db: Session,
+    teacher_id: int,
+    title: Optional[str] = None,
+    description: Optional[str] = None,
+    difficulty_level: Optional[int] = None
+) -> List[Activity]:
+    # Öğretmenin ilişkili olduğu öğrencileri bul
+    student_ids = db.query(StudentTeacher.student_id).filter(StudentTeacher.teacher_id == teacher_id).all()
+    student_ids = [sid[0] for sid in student_ids]
+    if not student_ids:
+        return []
+    query = db.query(Activity).filter(Activity.student_id.in_(student_ids))
+    if title is not None and title.strip() != "":
+        query = query.filter(Activity.title.ilike(f"%{title.strip()}%"))
+    if description is not None and description.strip() != "":
+        query = query.filter(Activity.description.ilike(f"%{description.strip()}%"))
+    if difficulty_level is not None:
+        query = query.filter(Activity.difficulty_level == difficulty_level)
+    return query.all()

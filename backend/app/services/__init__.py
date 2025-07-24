@@ -14,5 +14,5 @@ create_user, get_user, get_users, update_user, get_user_by_email, get_user_by_us
     get_all_student_teacher_relations, get_all_parent_child_relations
 )
 from .activity import (
-    create_activity, get_activity, get_student_activities, update_activity, delete_activity
+    create_activity, get_activity, get_student_activities, update_activity, delete_activity, get_teacher_activities, search_teacher_activities
 )
