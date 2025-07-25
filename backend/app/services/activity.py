@@ -3,9 +3,68 @@ from fastapi import HTTPException, status
 from datetime import datetime
 from typing import List, Optional
 
-from ..models import Activity, User, RoleEnum, StudentTeacher
+from ..models import Activity, User, RoleEnum, StudentTeacher, ParentChild
 from ..schemas import ActivityCreate, ActivityUpdate, ActivityRead
-from ..schemas import AktiviteTamamlaRequest
+from ..schemas import AktiviteTamamlaRequest, CocukGelisimItem
+from ..schemas import OgrenciDurumItem
+
+
+# Veli çocuk gelişimi raporu servisi
+def get_parent_children_report(db: Session, parent_id: int):
+    # Veliye bağlı çocukları bul
+    child_ids = db.query(ParentChild.child_id).filter(ParentChild.parent_id == parent_id).all()
+    child_ids = [cid[0] for cid in child_ids]
+    if not child_ids:
+        return []
+
+    rapor = []
+    for child_id in child_ids:
+        user = db.query(User).filter(User.id == child_id).first()
+        if not user:
+            continue
+        activities = db.query(Activity).filter(Activity.student_id == child_id).order_by(Activity.created_at.desc()).all()
+        toplam_aktivite = len(activities)
+        tamamlanan = [a for a in activities if a.completed]
+        skorlar = [a.score for a in tamamlanan if a.score is not None]
+        ortalama_skor = sum(skorlar) / len(skorlar) if skorlar else None
+        son_tamamlanan = None
+        if tamamlanan:
+            son_tamamlanan = max([a.completed_at for a in tamamlanan if a.completed_at is not None], default=None)
+        zorlandigi_aktiviteler = [
+            ActivityRead.from_orm(a)
+            for a in tamamlanan if a.score is not None and a.score < 50
+        ]
+        rapor.append({
+            "id": user.id,
+            "ad": user.full_name or user.username,
+            "toplam_aktivite": toplam_aktivite,
+            "ortalama_skor": ortalama_skor,
+            "son_tamamlanan_tarih": son_tamamlanan,
+            "zorlandigi_aktiviteler": zorlandigi_aktiviteler
+        })
+    return rapor
+
+# Öğrenci durum raporu servisi kendisi için
+def get_student_status_report(db: Session, student_id: int) -> OgrenciDurumItem:
+    activities = db.query(Activity).filter(Activity.student_id == student_id).all()
+    toplam_aktivite = len(activities)
+    tamamlanan = [a for a in activities if a.completed]
+    tamamlanan_aktivite = len(tamamlanan)
+    basari_orani = (tamamlanan_aktivite / toplam_aktivite * 100) if toplam_aktivite > 0 else 0
+    skorlar = [a.score for a in tamamlanan if a.score is not None]
+    ortalama_skor = sum(skorlar) / len(skorlar) if skorlar else None
+    en_yuksek_skor = max(skorlar) if skorlar else None
+    en_dusuk_skor = min(skorlar) if skorlar else None
+    zor_aktiviteler = [a.title for a in tamamlanan if a.score is not None and a.score < 50]
+    return OgrenciDurumItem(
+        toplam_aktivite=toplam_aktivite,
+        tamamlanan_aktivite=tamamlanan_aktivite,
+        basari_orani=basari_orani,
+        ortalama_skor=ortalama_skor,
+        en_yuksek_skor=en_yuksek_skor,
+        en_dusuk_skor=en_dusuk_skor,
+        zor_aktiviteler=zor_aktiviteler
+    )
 
 # Aktivite oluşturma servisi
 def create_activity(db: Session, activity: ActivityCreate):
@@ -177,6 +236,37 @@ def complete_activity_by_student(db: Session, activity_id: int, user_id: int, ta
     db.commit()
     db.refresh(activity)
     return activity
+
+    # ...existing code...
+
+# Öğretmenin sınıfındaki öğrencilerin genel durum raporu servisi
+def get_teacher_class_report(db: Session, teacher_id: int):
+    # Öğretmenin ilişkili olduğu öğrencileri bul
+    student_ids = db.query(StudentTeacher.student_id).filter(StudentTeacher.teacher_id == teacher_id).all()
+    student_ids = [sid[0] for sid in student_ids]
+    if not student_ids:
+        return []
+
+    # Her öğrenci için rapor hazırla
+    report = []
+    for student_id in student_ids:
+        user = db.query(User).filter(User.id == student_id).first()
+        if not user:
+            continue
+        activities = db.query(Activity).filter(Activity.student_id == student_id).order_by(Activity.created_at.desc()).all()
+        tamamlanan = [a for a in activities if a.completed]
+        toplam_tamamlanan = len(tamamlanan)
+        skorlar = [a.score for a in tamamlanan if a.score is not None]
+        ortalama_skor = sum(skorlar) / len(skorlar) if skorlar else None
+        son_aktivite_tarihi = activities[0].created_at if activities else None
+        report.append({
+            "id": user.id,
+            "ad": user.full_name or user.username,
+            "toplam_tamamlanan": toplam_tamamlanan,
+            "ortalama_skor": ortalama_skor,
+            "son_aktivite_tarihi": son_aktivite_tarihi
+        })
+    return report
 
 # Otomatik skor hesaplama fonksiyonu
 def calculate_quiz_score(activity):

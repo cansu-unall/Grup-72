@@ -20,6 +20,15 @@ from ..database import get_db
 from ..schemas import AktiviteTamamlaRequest
 from ..services.activity import complete_activity_by_student
 
+from ..schemas import SinifDurumuItem
+from ..services.activity import get_teacher_class_report
+
+from ..schemas import CocukGelisimItem
+from ..services.activity import get_parent_children_report
+
+from ..schemas import OgrenciDurumItem
+from ..services.activity import get_student_status_report
+
 router = APIRouter(
     prefix="/api/aktiviteler",
     tags=["aktiviteler"],
@@ -230,4 +239,52 @@ def ogrenci_aktivite_tamamla(
     """
     return complete_activity_by_student(db, activity_id, current_user.id, tamamla_data)
 
+# --- SINIF DURUMU RAPORU ENDPOINTİ ---
 
+
+@router.get("/raporlar/ogretmen/{teacher_id}/sinif-durumu", response_model=List[SinifDurumuItem])
+def get_teacher_class_status(
+    teacher_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Öğretmenin sınıfındaki öğrencilerin genel durumunu özetleyen rapor.
+    Sadece öğretmenler ve kendi öğrencileri için erişim izni vardır.
+    """
+    # Yetki kontrolü: Sadece öğretmen ve kendi ID'si
+    if current_user.role != RoleEnum.teacher or current_user.id != teacher_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sadece kendi sınıfınızın raporunu görebilirsiniz.")
+    return get_teacher_class_report(db, teacher_id)
+
+# --- VELİ ÇOCUK GELİŞİMİ RAPORU ENDPOINTİ ---
+
+@router.get("/raporlar/veli/{parent_id}/cocuk-gelisimi", response_model=List[CocukGelisimItem])
+def get_parent_children_status(
+    parent_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Veliye bağlı çocukların gelişim raporu.
+    Sadece veliler ve kendi çocukları için erişim izni vardır.
+    """
+    # Yetki kontrolü: Sadece veli ve kendi ID'si
+    if current_user.role != RoleEnum.parent or current_user.id != parent_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sadece kendi çocuklarınızın raporunu görebilirsiniz.")
+    return get_parent_children_report(db, parent_id)
+
+
+@router.get("/raporlar/ogrenci/{student_id}/durumum", response_model=OgrenciDurumItem)
+def get_student_status(
+    student_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Öğrenci kendi genel durumunu özetleyen rapor.
+    Sadece öğrenci ve kendi ID'si ile erişim izni vardır.
+    """
+    if current_user.role != RoleEnum.student or current_user.id != student_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sadece kendi durumunuzu görebilirsiniz.")
+    return get_student_status_report(db, student_id)

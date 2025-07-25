@@ -197,6 +197,36 @@ class ProgressItem(BaseModel):
     score: Optional[int] = None
     difficulty_level: int
 
+
+# Öğretmen sınıf durumu raporu için response modeli
+class SinifDurumuItem(BaseModel):
+    id: int
+    ad: str
+    toplam_tamamlanan: int
+    ortalama_skor: Optional[float] = None
+    son_aktivite_tarihi: Optional[datetime] = None
+
+# Veli çocuk gelişimi raporu için response modeli
+class CocukGelisimItem(BaseModel):
+    id: int
+    ad: str
+    toplam_aktivite: int
+    ortalama_skor: Optional[float] = None
+    son_tamamlanan_tarih: Optional[datetime] = None
+    zorlandigi_aktiviteler: List[ActivityRead] = []
+
+class CocukGelisimRaporu(BaseModel):
+    cocuklar: List[CocukGelisimItem]
+
+class OgrenciDurumItem(BaseModel):
+    toplam_aktivite: int
+    tamamlanan_aktivite: int
+    basari_orani: float
+    ortalama_skor: Optional[float]
+    en_yuksek_skor: Optional[int]
+    en_dusuk_skor: Optional[int]
+    zor_aktiviteler: List[str]
+
 class StudentProgressReport(BaseModel):
     total_completed: int
     average_score: Optional[float] = None
