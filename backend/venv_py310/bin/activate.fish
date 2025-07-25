@@ -33,7 +33,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV /Users/emirbugrairmak/dyslexia-ai-backend/venv_py310
+set -gx VIRTUAL_ENV /Users/emirbugrairmak/dyslexia-ai-backend/backend/venv_py310
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/"bin $PATH

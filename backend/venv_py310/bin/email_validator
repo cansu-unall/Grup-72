@@ -1,4 +1,4 @@
-#!/Users/emirbugrairmak/dyslexia-ai-backend/venv_py310/bin/python3.10
+#!/Users/emirbugrairmak/dyslexia-ai-backend/backend/venv_py310/bin/python3.10
 # -*- coding: utf-8 -*-
 import re
 import sys

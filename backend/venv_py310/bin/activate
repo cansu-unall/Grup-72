@@ -38,7 +38,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV=/Users/emirbugrairmak/dyslexia-ai-backend/venv_py310
+VIRTUAL_ENV=/Users/emirbugrairmak/dyslexia-ai-backend/backend/venv_py310
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"

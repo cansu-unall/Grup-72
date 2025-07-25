@@ -34,10 +34,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Routerları ekle
+from .routers.ai_router import router as ai_router
 app.include_router(giris_router)
 app.include_router(kullanicilar_router)
 app.include_router(aktiviteler_router)
+app.include_router(ai_router)
 
 @app.get("/")
 def read_root():
