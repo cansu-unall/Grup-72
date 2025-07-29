@@ -1,5 +1,5 @@
-from pydantic import BaseModel, EmailStr, Field, validator
-from typing import Optional, List
+from pydantic import BaseModel, EmailStr, Field, validator, field_validator
+from typing import Optional, List, Dict
 from datetime import datetime
 from enum import Enum
 
@@ -183,7 +183,20 @@ class ActivityRead(ActivityBase):
     feedback: Optional[str] = None
     created_at: datetime
     completed_at: Optional[datetime] = None
-    
+    correct_answers: Optional[List[Dict[str, str]]] = None
+    questions: Optional[List[str]] = None
+
+    @field_validator("correct_answers", mode="before")
+    @classmethod
+    def parse_correct_answers(cls, v):
+        import json
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except Exception:
+                return None
+        return v
+
     class Config:
         from_attributes = True
 

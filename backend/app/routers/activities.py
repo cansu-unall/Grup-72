@@ -1,3 +1,6 @@
+from ..schemas.ai_schemas import StudentQuizAnswerRequest
+from ..services.activity import answer_quiz_activity_by_student
+
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -140,7 +143,37 @@ def read_student_activities(
                 detail="Bu öğrencinin aktivitelerine erişim izniniz yok"
             )
     
+
     activities = get_student_activities(db, student_id=student_id, skip=skip, limit=limit, completed=completed)
+
+    # Eğer kendi aktivitelerini çekiyorsa ve quiz ise sadece soruları göster, doğru cevapları gösterme
+    if current_user.role == RoleEnum.student and student_id == current_user.id:
+        import json
+        result = []
+        for activity in activities:
+            activity_dict = activity.__dict__.copy() if not hasattr(activity, 'dict') else activity.dict()
+            if hasattr(activity, 'activity_type') and activity.activity_type == "quiz":
+                # correct_answers alanı varsa, sadece soruları çıkar
+                questions = []
+                if activity.correct_answers:
+                    try:
+                        correct_answers_list = json.loads(activity.correct_answers)
+                        if isinstance(correct_answers_list, list):
+                            questions = [item["soru"] for item in correct_answers_list if "soru" in item]
+                    except Exception:
+                        questions = []
+                # correct_answers None ise de questions alanı boş liste olarak eklenmeli
+                activity_dict["questions"] = questions
+                # correct_answers alanını öğrenciye göstermiyoruz
+                if "correct_answers" in activity_dict:
+                    del activity_dict["correct_answers"]
+            # ActivityRead modelinde olmayan alanları filtrele, questions eklenebilir
+            from ..schemas import ActivityRead
+            allowed_fields = set(ActivityRead.model_fields.keys()) | {"questions"}
+            filtered = {k: v for k, v in activity_dict.items() if k in allowed_fields}
+            result.append(filtered)
+        return result
+    # Diğer durumlarda olduğu gibi dön
     return activities
 
 @router.put("/{activity_id}", response_model=ActivityRead)
@@ -288,3 +321,17 @@ def get_student_status(
     if current_user.role != RoleEnum.student or current_user.id != student_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Sadece kendi durumunuzu görebilirsiniz.")
     return get_student_status_report(db, student_id)
+
+# Öğrenci quiz cevaplama endpoint'i
+@router.post("/ogrenci/{activity_id}/cevapla", response_model=ActivityRead)
+def ogrenci_quiz_cevapla(
+    activity_id: int,
+    answer_data: StudentQuizAnswerRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Öğrenci quiz tipi aktivitedeki sorulara verdiği cevapları gönderir.
+    Sadece ilgili öğrenci veya admin erişebilir.
+    """
+    return answer_quiz_activity_by_student(db, activity_id, answer_data, current_user)

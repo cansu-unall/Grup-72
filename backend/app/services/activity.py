@@ -1,3 +1,7 @@
+# Quiz cevaplama servisi
+import json
+from ..schemas.ai_schemas import StudentQuizAnswerRequest
+
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from datetime import datetime
@@ -8,6 +12,7 @@ from ..schemas import ActivityCreate, ActivityUpdate, ActivityRead
 from ..schemas import AktiviteTamamlaRequest, CocukGelisimItem
 from ..schemas import OgrenciDurumItem
 
+from rapidfuzz import fuzz
 
 # Veli çocuk gelişimi raporu servisi
 def get_parent_children_report(db: Session, parent_id: int):
@@ -269,17 +274,40 @@ def get_teacher_class_report(db: Session, teacher_id: int):
     return report
 
 # Otomatik skor hesaplama fonksiyonu
+
 def calculate_quiz_score(activity):
-    # Quiz cevapları ve doğru cevaplar karşılaştırılır
-    # Cevaplar JSON string olarak tutuluyor
-    import json
     try:
         student_answers = json.loads(activity.student_answers) if activity.student_answers else []
-        correct_answers = json.loads(activity.correct_answers) if activity.correct_answers else []
+        correct_answers_raw = json.loads(activity.correct_answers) if activity.correct_answers else []
+        correct_answers = [item["dogru_cevap"] for item in correct_answers_raw if "dogru_cevap" in item]
     except Exception:
         return 0
+
     if not student_answers or not correct_answers or len(correct_answers) != 5:
         return 0
-    dogru_sayisi = sum(1 for s, c in zip(student_answers, correct_answers) if s == c)
+
+    dogru_sayisi = sum(
+        1 for s, c in zip(student_answers, correct_answers)
+        if fuzz.partial_ratio(s.lower().strip(), c.lower().strip()) >= 80
+    )
     skor = int((dogru_sayisi / 5) * 100)
     return skor
+
+
+
+def answer_quiz_activity_by_student(db: Session, activity_id: int, answer_data: StudentQuizAnswerRequest, current_user: User):
+    activity = db.query(Activity).filter(Activity.id == activity_id).first()
+    if not activity:
+        raise HTTPException(status_code=404, detail="Aktivite bulunamadı")
+    if activity.activity_type != "quiz":
+        raise HTTPException(status_code=400, detail="Bu aktivite bir quiz değildir.")
+    # Sadece ilgili öğrenci veya admin erişebilir
+    if current_user.id != answer_data.student_id and current_user.role != RoleEnum.admin:
+        raise HTTPException(status_code=403, detail="Sadece ilgili öğrenci veya admin cevaplayabilir.")
+    if activity.student_id != answer_data.student_id:
+        raise HTTPException(status_code=400, detail="Aktivite bu öğrenciye ait değil.")
+    # Cevaplar JSON olarak kaydedilir
+    activity.student_answers = json.dumps(answer_data.cevaplar)
+    db.commit()
+    db.refresh(activity)
+    return activity
