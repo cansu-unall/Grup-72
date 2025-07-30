@@ -37,10 +37,14 @@ app.add_middleware(
 
 # Routerları ekle
 from .routers.ai_router import router as ai_router
+from .routers.word_difficulty import router as word_difficulty_router
+from .routers.kelime_router import router as kelime_router
 app.include_router(giris_router)
 app.include_router(kullanicilar_router)
 app.include_router(aktiviteler_router)
 app.include_router(ai_router)
+app.include_router(word_difficulty_router)
+app.include_router(kelime_router)
 
 @app.get("/")
 def read_root():

@@ -1,3 +1,4 @@
+
 from pydantic import BaseModel
 
 class TextSimplifyRequest(BaseModel):
@@ -31,3 +32,11 @@ class StudentQuizAnswerRequest(BaseModel):
 class MetinUretResponse(BaseModel):
     uretilen_metin: str
     kategori: str
+
+# Yardım botu için istek ve yanıt modelleri
+class AIYardimBotRequest(BaseModel):
+    student_id: int
+    soru: str
+
+class AIYardimBotResponse(BaseModel):
+    yanit: str

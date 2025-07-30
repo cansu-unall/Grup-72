@@ -4,6 +4,8 @@ from datetime import datetime
 import enum
 from ..database import Base
 
+from sqlalchemy.schema import UniqueConstraint
+
 # User role enum
 class RoleEnum(str, enum.Enum):
     student = "student"
@@ -135,3 +137,12 @@ class Activity(Base):
     correct_answers = Column(Text, nullable=True)  # JSON string olarak tutulacak
 
     student = relationship("User", back_populates="student_activities")
+
+# Öğrencinin zorlandığı kelimeler modeli
+class StudentWordDifficulty(Base):
+    __tablename__ = "student_word_difficulty"
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    kelime = Column(String, nullable=False)
+    tekrar_sayisi = Column(Integer, default=1)
+    __table_args__ = (UniqueConstraint('student_id', 'kelime', name='_student_kelime_uc'),)

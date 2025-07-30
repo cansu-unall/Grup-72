@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from ..schemas.ai_schemas import TextSimplifyRequest, TextSimplifyResponse
 from ..schemas.ai_schemas import MetinUretRequest, MetinUretResponse
-from ..schemas.ai_schemas import AnlamaSorusuResponse
-from ..services.ai_service import simplify_text, generate_text, generate_comprehension_questions_with_gemini
+from ..schemas.ai_schemas import AnlamaSorusuResponse, AIYardimBotRequest, AIYardimBotResponse
+from ..services.ai_service import simplify_text, generate_text, generate_comprehension_questions_with_gemini, yardim_bot_cevabi_uret
 
 from ..models import User, RoleEnum
 from ..services import get_current_active_user
@@ -55,3 +55,16 @@ def anlama_sorusu_uret(
         return {"sorular": sorular}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+# Yardım botu endpointi
+@router.post("/yardim-bot", response_model=AIYardimBotResponse)
+def yardim_bot(
+    req: AIYardimBotRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    # Sadece öğrenci kendi student_id'siyle erişebilir
+    if current_user.role != RoleEnum.student or current_user.id != req.student_id:
+        raise HTTPException(status_code=403, detail="Sadece kendi hesabınızla öğrenci olarak erişebilirsiniz.")
+    yanit = yardim_bot_cevabi_uret(req.soru)
+    return AIYardimBotResponse(yanit=yanit)

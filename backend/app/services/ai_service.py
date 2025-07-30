@@ -1,3 +1,4 @@
+
 from sqlalchemy.orm import Session
 from ..models.models import Activity
 
@@ -112,3 +113,23 @@ def generate_comprehension_questions_with_gemini(db: Session, activity_id: int) 
         return sorular
     except Exception as e:
         raise Exception(f"Soru üretilemedi: {str(e)}")
+    
+# Yardım botu için AI chatbot açıklama servisi
+def yardim_bot_cevabi_uret(soru: str) -> str:
+    """
+    AI, çocuklara uygun, kısa ve sade bir açıklama döner.
+    """
+    if not GEMINI_API_KEY:
+        raise Exception("GEMINI_API_KEY tanımlı değil.")
+    prompt = f"""
+    Aşağıdaki soruyu 7-12 yaş arası bir çocuğa açıklama yapar gibi, kısa, açık ve basit bir dille açıkla. Teknik terim veya karmaşık açıklama kullanma. Sadece açıklamayı döndür.Fazla uzatmadan yanıtla.
+    Soru: {soru}
+    """
+    try:
+        model = genai.GenerativeModel("gemini-2.5-flash")
+        response = model.generate_content(prompt)
+        yanit = response.text.strip().replace("\n", " ")
+        yanit = yanit.replace('\"', '"').replace('\\', '"')
+        return yanit
+    except Exception as e:
+        return "Açıklama üretilemedi."
