@@ -183,7 +183,7 @@ class ActivityRead(ActivityBase):
     feedback: Optional[str] = None
     created_at: datetime
     completed_at: Optional[datetime] = None
-    correct_answers: Optional[List[Dict[str, str]]] = None
+    correct_answers: Optional[List[str]] = None
     questions: Optional[List[str]] = None
 
     @field_validator("correct_answers", mode="before")
@@ -192,7 +192,11 @@ class ActivityRead(ActivityBase):
         import json
         if isinstance(v, str):
             try:
-                return json.loads(v)
+                loaded = json.loads(v)
+                # Eğer dict listesi gelirse, sadece dogru_cevap değerlerini al
+                if loaded and isinstance(loaded, list) and isinstance(loaded[0], dict) and "dogru_cevap" in loaded[0]:
+                    return [item["dogru_cevap"] for item in loaded if "dogru_cevap" in item]
+                return loaded
             except Exception:
                 return None
         return v
@@ -220,6 +224,8 @@ class SinifDurumuItem(BaseModel):
     son_aktivite_tarihi: Optional[datetime] = None
 
 # Veli çocuk gelişimi raporu için response modeli
+from .kelime_schemas import ZorKelimeResponse
+
 class CocukGelisimItem(BaseModel):
     id: int
     ad: str
@@ -227,6 +233,7 @@ class CocukGelisimItem(BaseModel):
     ortalama_skor: Optional[float] = None
     son_tamamlanan_tarih: Optional[datetime] = None
     zorlandigi_aktiviteler: List[ActivityRead] = []
+    zorlandigi_kelimeler: list[ZorKelimeResponse] = []
 
 class CocukGelisimRaporu(BaseModel):
     cocuklar: List[CocukGelisimItem]

@@ -23,6 +23,8 @@ def get_parent_children_report(db: Session, parent_id: int):
         return []
 
     rapor = []
+    from ..services.kelime_service import get_student_zor_kelimeler
+    from ..schemas.kelime_schemas import ZorKelimeResponse
     for child_id in child_ids:
         user = db.query(User).filter(User.id == child_id).first()
         if not user:
@@ -39,13 +41,19 @@ def get_parent_children_report(db: Session, parent_id: int):
             ActivityRead.from_orm(a)
             for a in tamamlanan if a.score is not None and a.score < 50
         ]
+        # Zorlandığı kelimeler
+        zor_kelimeler_obj = get_student_zor_kelimeler(db, child_id)
+        zorlandigi_kelimeler = [
+            {"kelime": z.kelime, "tekrar_sayisi": z.tekrar_sayisi} for z in zor_kelimeler_obj
+        ]
         rapor.append({
             "id": user.id,
             "ad": user.full_name or user.username,
             "toplam_aktivite": toplam_aktivite,
             "ortalama_skor": ortalama_skor,
             "son_tamamlanan_tarih": son_tamamlanan,
-            "zorlandigi_aktiviteler": zorlandigi_aktiviteler
+            "zorlandigi_aktiviteler": zorlandigi_aktiviteler,
+            "zorlandigi_kelimeler": zorlandigi_kelimeler
         })
     return rapor
 
