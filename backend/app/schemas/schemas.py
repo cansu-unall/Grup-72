@@ -216,15 +216,17 @@ class ProgressItem(BaseModel):
 
 
 # Öğretmen sınıf durumu raporu için response modeli
+
+from .kelime_schemas import ZorKelimeResponse
+
 class SinifDurumuItem(BaseModel):
     id: int
     ad: str
     toplam_tamamlanan: int
     ortalama_skor: Optional[float] = None
     son_aktivite_tarihi: Optional[datetime] = None
+    zorlandigi_kelimeler: list[ZorKelimeResponse] = []
 
-# Veli çocuk gelişimi raporu için response modeli
-from .kelime_schemas import ZorKelimeResponse
 
 class CocukGelisimItem(BaseModel):
     id: int
@@ -246,6 +248,7 @@ class OgrenciDurumItem(BaseModel):
     en_yuksek_skor: Optional[int]
     en_dusuk_skor: Optional[int]
     zor_aktiviteler: List[str]
+    zorlandigi_kelimeler: list[ZorKelimeResponse] = []
 
 class StudentProgressReport(BaseModel):
     total_completed: int
