@@ -68,7 +68,9 @@ def get_student_status_report(db: Session, student_id: int) -> OgrenciDurumItem:
     ortalama_skor = sum(skorlar) / len(skorlar) if skorlar else None
     en_yuksek_skor = max(skorlar) if skorlar else None
     en_dusuk_skor = min(skorlar) if skorlar else None
-    zor_aktiviteler = [a.title for a in tamamlanan if a.score is not None and a.score < 50]
+    # Skoru 50'nin altında olan aktiviteleri tüm detaylarıyla getir
+    from ..schemas import ActivityRead
+    zorlandigi_aktiviteler = [ActivityRead.from_orm(a) for a in tamamlanan if a.score is not None and a.score < 50]
 
     # Zorlandığı kelimeler
     from ..services.kelime_service import get_student_zor_kelimeler
@@ -83,7 +85,7 @@ def get_student_status_report(db: Session, student_id: int) -> OgrenciDurumItem:
         ortalama_skor=ortalama_skor,
         en_yuksek_skor=en_yuksek_skor,
         en_dusuk_skor=en_dusuk_skor,
-        zor_aktiviteler=zor_aktiviteler,
+        zorlandigi_aktiviteler=zorlandigi_aktiviteler,
         zorlandigi_kelimeler=zorlandigi_kelimeler
     )
 
@@ -270,6 +272,7 @@ def get_teacher_class_report(db: Session, teacher_id: int):
 
     # Her öğrenci için rapor hazırla
     from ..services.kelime_service import get_student_zor_kelimeler
+    from ..schemas import ActivityRead
     report = []
     for student_id in student_ids:
         user = db.query(User).filter(User.id == student_id).first()
@@ -286,13 +289,16 @@ def get_teacher_class_report(db: Session, teacher_id: int):
         zorlandigi_kelimeler = [
             {"kelime": z.kelime, "tekrar_sayisi": z.tekrar_sayisi} for z in zor_kelimeler_obj
         ]
+        # Zorlandığı aktiviteler (skoru 50'nin altında olanlar)
+        zorlandigi_aktiviteler = [ActivityRead.from_orm(a) for a in tamamlanan if a.score is not None and a.score < 50]
         report.append({
             "id": user.id,
             "ad": user.full_name or user.username,
             "toplam_tamamlanan": toplam_tamamlanan,
             "ortalama_skor": ortalama_skor,
             "son_aktivite_tarihi": son_aktivite_tarihi,
-            "zorlandigi_kelimeler": zorlandigi_kelimeler
+            "zorlandigi_kelimeler": zorlandigi_kelimeler,
+            "zorlandigi_aktiviteler": zorlandigi_aktiviteler
         })
     return report
 

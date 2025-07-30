@@ -226,6 +226,7 @@ class SinifDurumuItem(BaseModel):
     ortalama_skor: Optional[float] = None
     son_aktivite_tarihi: Optional[datetime] = None
     zorlandigi_kelimeler: list[ZorKelimeResponse] = []
+    zorlandigi_aktiviteler: List[ActivityRead] = []  # Skoru 50'nin altında olan aktiviteler
 
 
 class CocukGelisimItem(BaseModel):
@@ -241,14 +242,14 @@ class CocukGelisimRaporu(BaseModel):
     cocuklar: List[CocukGelisimItem]
 
 class OgrenciDurumItem(BaseModel):
-    toplam_aktivite: int
-    tamamlanan_aktivite: int
-    basari_orani: float
-    ortalama_skor: Optional[float]
-    en_yuksek_skor: Optional[int]
-    en_dusuk_skor: Optional[int]
-    zor_aktiviteler: List[str]
-    zorlandigi_kelimeler: list[ZorKelimeResponse] = []
+    toplam_aktivite: int  # Öğrencinin toplam aktivite sayısı
+    tamamlanan_aktivite: int  # Öğrencinin tamamladığı aktivite sayısı
+    basari_orani: float  # Başarı oranı (tamamlanan/toplam)
+    ortalama_skor: Optional[float]  # Ortalama skor
+    en_yuksek_skor: Optional[int]  # En yüksek skor
+    en_dusuk_skor: Optional[int]  # En düşük skor
+    zorlandigi_aktiviteler: List[ActivityRead] = []  # Skoru 50'nin altında olan aktiviteler (tüm detaylarıyla)
+    zorlandigi_kelimeler: list[ZorKelimeResponse] = []  # Zorlandığı kelimeler
 
 class StudentProgressReport(BaseModel):
     total_completed: int
