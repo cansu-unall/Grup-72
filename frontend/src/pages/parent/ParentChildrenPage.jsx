@@ -1,14 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 const ParentChildrenPage = () => {
     const [children, setChildren] = useState([]);
     const navigate = useNavigate();
+    const { user } = useAuth();
+
     // GET /api/kullanicilar/veli/{parent_id}/cocuklar
     useEffect(() => {
-        setChildren([ {id: 1, full_name: 'Efe Can'}, {id: 3, full_name: 'Sude Naz'} ]);
-    }, []);
+        const fetchChildren = async () => {
+            try {
+                const response = await api.get(`/api/kullanicilar/veli/${user.id}/cocuklar`);
+                setChildren(response.data);
+            } catch (err) {
+                setChildren([]);
+            }
+        };
+        if (user?.id) fetchChildren();
+    }, [user]);
+
     return (
         <div>
             <h1 className="text-3xl font-bold mb-6">Çocuklarım</h1>
@@ -25,4 +37,3 @@ const ParentChildrenPage = () => {
 };
 
 export default ParentChildrenPage;
-

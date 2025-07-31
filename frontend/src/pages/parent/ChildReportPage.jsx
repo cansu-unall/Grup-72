@@ -1,14 +1,32 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 const ChildReportPage = () => {
     const { childId } = useParams();
-    // GET /api/aktiviteler/raporlar/veli/{parent_id}/cocuk-gelisimi (bu endpoint liste döner, filtrelemek gerekir)
-    // veya öğrenci raporu endpoint'i kullanılabilir: GET /api/aktiviteler/raporlar/ogrenci/{child_id}/ilerleme
-    const reportData = {
-        ad: 'Efe Can', ortalama_skor: 78, toplam_aktivite: 12,
-        zorlandigi_kelimeler: ['paradoks', 'metafor']
-    };
+    const { user } = useAuth();
+    const [reportData, setReportData] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    // GET /api/aktiviteler/raporlar/ogrenci/{child_id}/ilerleme
+    useEffect(() => {
+        const fetchReport = async () => {
+            try {
+                const response = await api.get(`/api/aktiviteler/raporlar/ogrenci/${childId}/ilerleme`);
+                setReportData(response.data);
+            } catch (err) {
+                setReportData(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+        if (childId) fetchReport();
+    }, [childId]);
+
+    if (loading) return <div>Yükleniyor...</div>;
+    if (!reportData) return <div>Rapor verisi bulunamadı.</div>;
+
     return (
         <div>
             <h1 className="text-3xl font-bold mb-6">{reportData.ad} Gelişim Raporu</h1>
@@ -33,4 +51,3 @@ const ChildReportPage = () => {
 };
 
 export default ChildReportPage;
-
