@@ -21,6 +21,7 @@ from ..schemas import (
     TeacherProfileCreate, TeacherProfileRead,
     ParentProfileCreate, ParentProfileRead
 )
+
 from ..models import User, RoleEnum, StudentTeacher, ParentChild
 from ..database import get_db
 from ..schemas import StudentProfileUpdate
@@ -210,6 +211,39 @@ def update_teacher_profile_for_user(
         )
 
     return update_teacher_profile(db=db, user_id=user_id, profile_update=profile_update)
+
+
+# Veli profili oluşturma endpointi
+@router.post("/{user_id}/veli-profili", response_model=ParentProfileRead, status_code=status.HTTP_201_CREATED)
+def create_parent_profile_for_user(
+    user_id: int,
+    profile_create: ParentProfileCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Belirli bir kullanıcı için veli profili oluşturur. Sadece kendi hesabı veya admin oluşturabilir.
+    Request Body örneği:
+    {
+        "relationship_type": "Anne",
+        "additional_info": "Çocuğumun özel eğitim ihtiyacı var."
+    }
+    """
+    # Sadece kendi hesabı veya admin oluşturabilir
+    if current_user.id != user_id and current_user.role != RoleEnum.admin:
+        raise HTTPException(status_code=403, detail="Sadece kendi hesabınız veya admin olarak oluşturabilirsiniz.")
+    # Kullanıcı gerçekten veli mi?
+    db_user = get_user(db, user_id=user_id)
+    if not db_user or db_user.role != RoleEnum.parent:
+        raise HTTPException(status_code=400, detail="Bu kullanıcı bir veli değil.")
+    # Zaten profil var mı?
+    from ..models import ParentProfile
+    existing_profile = db.query(ParentProfile).filter(ParentProfile.user_id == user_id).first()
+    if existing_profile:
+        raise HTTPException(status_code=400, detail="Bu kullanıcı için zaten bir veli profili mevcut.")
+    # Profil oluştur
+    profile = create_parent_profile(db=db, user_id=user_id, profile_create=profile_create)
+    return profile
 
 # Veli profili güncelleme endpointi
 @router.put("/{user_id}/veli-profili", response_model=ParentProfileRead)
