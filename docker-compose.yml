@@ -13,6 +13,9 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - SECRET_KEY=supersecretkey123
+      - ALGORITHM=HS256
     depends_on:
       - db
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8003", "--reload"]
@@ -25,6 +28,7 @@ services:
       - "5173:5173"
     volumes:
       - ./frontend:/app
+      - /app/node_modules
     working_dir: /app
     command: ["npm", "run", "dev", "--", "--host"]
     environment:

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Backend sunucunuzun adresini buraya girin.
-const API_URL = 'http://localhost:8000'; // Örnek URL, kendi backend adresinizle değiştirin.
+const API_URL = 'http://localhost:8003'; // Örnek URL, kendi backend adresinizle değiştirin.
 
 const api = axios.create({
   baseURL: API_URL,
