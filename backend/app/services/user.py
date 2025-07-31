@@ -166,6 +166,7 @@ def update_teacher_profile(db: Session, user_id: int, profile_update: TeacherPro
     db.commit()
     db.refresh(db_profile)
     return db_profile
+
 # Öğrenci profili güncelleme servisi
 def update_student_profile(db: Session, user_id: int, profile_update: StudentProfileUpdate):
     db_user = db.query(User).filter(User.id == user_id).first()
