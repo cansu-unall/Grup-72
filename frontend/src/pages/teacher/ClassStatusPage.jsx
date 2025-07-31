@@ -1,9 +1,24 @@
+import React, { useEffect, useState } from 'react';
+import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+
 const ClassStatusPage = () => {
+    const { user } = useAuth();
+    const [classData, setClassData] = useState([]);
+
     // GET /api/aktiviteler/raporlar/ogretmen/{teacher_id}/sinif-durumu
-    const classData = [
-        { id: 1, ad: 'Ali Yılmaz', ortalama_skor: 85, son_aktivite_tarihi: '2025-07-30' },
-        { id: 2, ad: 'Zeynep Kaya', ortalama_skor: 78, son_aktivite_tarihi: '2025-07-29' },
-    ];
+    useEffect(() => {
+        const fetchClassData = async () => {
+            try {
+                const response = await api.get(`/api/aktiviteler/raporlar/ogretmen/${user.id}/sinif-durumu`);
+                setClassData(response.data);
+            } catch (err) {
+                setClassData([]);
+            }
+        };
+        if (user?.id) fetchClassData();
+    }, [user]);
+
     return (
         <div>
             <h1 className="text-3xl font-bold mb-6">Sınıf Durumu</h1>

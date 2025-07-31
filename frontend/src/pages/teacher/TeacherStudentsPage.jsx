@@ -1,11 +1,22 @@
 import React, { useEffect, useState } from 'react';
+import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 const TeacherStudentsPage = () => {
+    const { user } = useAuth();
     const [students, setStudents] = useState([]);
     // GET /api/kullanicilar/ogretmen/{teacher_id}/ogrenciler
     useEffect(() => {
-        setStudents([ {id: 1, full_name: 'Ali Yılmaz'}, {id: 2, full_name: 'Zeynep Kaya'} ]);
-    }, []);
+        const fetchStudents = async () => {
+            try {
+                const response = await api.get(`/api/kullanicilar/ogretmen/${user.id}/ogrenciler`);
+                setStudents(response.data);
+            } catch (err) {
+                setStudents([]);
+            }
+        };
+        if (user?.id) fetchStudents();
+    }, [user]);
     return (
         <div>
             <h1 className="text-3xl font-bold mb-6">Öğrencilerim</h1>

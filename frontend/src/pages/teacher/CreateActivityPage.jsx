@@ -1,15 +1,33 @@
+import React, { useState } from 'react';
+import api from '../../services/api';
+
 const CreateActivityPage = () => {
     const [generatedText, setGeneratedText] = useState('');
     const [simplifiedText, setSimplifiedText] = useState('');
 
     const handleGenerateText = async () => {
         // POST /api/ai/metin-uret
-        setGeneratedText("Yapay zeka tarafından üretilen örnek metin burada yer alacak. Bu metin, doğa kategorisi için oluşturulmuştur.");
+        try {
+            const response = await api.post('/api/ai/metin-uret', {
+                kategori: "doğa", // örnek kategori, ihtiyaca göre değiştirilebilir
+                uzunluk: 150 // örnek uzunluk, ihtiyaca göre değiştirilebilir
+            });
+            setGeneratedText(response.data.metin);
+        } catch (err) {
+            setGeneratedText("Metin üretilemedi.");
+        }
     };
 
     const handleSimplifyText = async () => {
         // POST /api/ai/metin-sadeleştir
-        setSimplifiedText("AI ile üretilen metnin sadeleştirilmiş hali.");
+        try {
+            const response = await api.post('/api/ai/metin-sadeleştir', {
+                metin: generatedText
+            });
+            setSimplifiedText(response.data.sade_metin);
+        } catch (err) {
+            setSimplifiedText("Metin sadeleştirilemedi.");
+        }
     };
 
     return (
