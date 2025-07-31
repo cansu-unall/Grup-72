@@ -10,16 +10,23 @@ import ParentDashboard from './pages/parent/ParentDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuth } from './context/AuthContext';
 import Spinner from './components/common/Spinner';
+import StudentActivitiesPage from './pages/student/StudentActivitiesPage';
+import ActivityPage from './pages/student/ActivityPage';
+import DifficultWordsPage from './pages/student/DifficultWordsPage';
+import StudentReportPage from './pages/student/StudentReportPage';
+import HelpBotPage from './pages/student/HelpBotPage';
+import TeacherStudentsPage from './pages/teacher/TeacherStudentsPage';
+import CreateActivityPage from './pages/teacher/CreateActivityPage';
+import ClassStatusPage from './pages/teacher/ClassStatusPage';
+import ParentChildrenPage from './pages/parent/ParentChildrenPage';
+import ChildReportPage from './pages/parent/ChildReportPage';
 
 function App() {
   const { user, loading } = useAuth();
 
-  // Auth durumu kontrol edilirken yüklenme ekranı gösterilir
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Spinner />
-      </div>
+      <div className="flex items-center justify-center min-h-screen"><Spinner /></div>
     );
   }
 
@@ -28,56 +35,51 @@ function App() {
       {/* Public Routes */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-
-      {/* Giriş yapıldıysa login sayfasına gitmeyi engelle */}
       <Route path="/" element={user ? <Navigate to={`/${user.role}/dashboard`} /> : <Navigate to="/login" />} />
 
-      {/* Protected Student Routes */}
-      <Route 
-        path="/student/*" 
-        element={
-          <ProtectedRoute allowedRoles={['student']}>
-            <StudentLayout>
-              <Routes>
-                <Route path="dashboard" element={<StudentDashboard />} />
-                {/* Diğer öğrenci sayfaları buraya eklenecek: /student/exercises, /student/profile vb. */}
-              </Routes>
-            </StudentLayout>
-          </ProtectedRoute>
-        } 
-      />
+      {/* Student Routes */}
+      <Route path="/student/*" element={
+        <ProtectedRoute allowedRoles={['student']}>
+          <StudentLayout>
+            <Routes>
+              <Route path="dashboard" element={<StudentDashboard />} />
+              <Route path="activities" element={<StudentActivitiesPage />} />
+              <Route path="activity/:activityId" element={<ActivityPage />} />
+              <Route path="difficult-words" element={<DifficultWordsPage />} />
+              <Route path="report" element={<StudentReportPage />} />
+              <Route path="help-bot" element={<HelpBotPage />} />
+            </Routes>
+          </StudentLayout>
+        </ProtectedRoute>
+      }/>
 
-      {/* Protected Teacher Routes */}
-      <Route 
-        path="/teacher/*" 
-        element={
-          <ProtectedRoute allowedRoles={['teacher']}>
-            <TeacherLayout>
-              <Routes>
-                <Route path="dashboard" element={<TeacherDashboard />} />
-                {/* Diğer öğretmen sayfaları buraya eklenecek */}
-              </Routes>
-            </TeacherLayout>
-          </ProtectedRoute>
-        } 
-      />
+      {/* Teacher Routes */}
+      <Route path="/teacher/*" element={
+        <ProtectedRoute allowedRoles={['teacher']}>
+          <TeacherLayout>
+            <Routes>
+              <Route path="dashboard" element={<TeacherDashboard />} />
+              <Route path="students" element={<TeacherStudentsPage />} />
+              <Route path="create-activity" element={<CreateActivityPage />} />
+              <Route path="class-status" element={<ClassStatusPage />} />
+            </Routes>
+          </TeacherLayout>
+        </ProtectedRoute>
+      }/>
       
-      {/* Protected Parent Routes */}
-      <Route 
-        path="/parent/*" 
-        element={
-          <ProtectedRoute allowedRoles={['parent']}>
-            <ParentLayout>
-              <Routes>
-                <Route path="dashboard" element={<ParentDashboard />} />
-                {/* Diğer veli sayfaları buraya eklenecek */}
-              </Routes>
-            </ParentLayout>
-          </ProtectedRoute>
-        } 
-      />
+      {/* Parent Routes */}
+      <Route path="/parent/*" element={
+        <ProtectedRoute allowedRoles={['parent']}>
+          <ParentLayout>
+            <Routes>
+              <Route path="dashboard" element={<ParentDashboard />} />
+              <Route path="children" element={<ParentChildrenPage />} />
+              <Route path="child-report/:childId" element={<ChildReportPage />} />
+            </Routes>
+          </ParentLayout>
+        </ProtectedRoute>
+      }/>
 
-      {/* Not Found Route */}
       <Route path="*" element={<div>404 - Sayfa Bulunamadı</div>} />
     </Routes>
   );

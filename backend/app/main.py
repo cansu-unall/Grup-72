@@ -25,6 +25,7 @@ origins = [
     "http://localhost:3000",  # React frontend için
     "http://localhost:8000",
     "http://localhost:5173",
+    "http://localhost:8003"
 ]
 
 app.add_middleware(
