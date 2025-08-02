@@ -183,8 +183,31 @@ class ActivityRead(ActivityBase):
     feedback: Optional[str] = None
     created_at: datetime
     completed_at: Optional[datetime] = None
-    correct_answers: Optional[List[str]] = None
     questions: Optional[List[str]] = None
+    student_answers: Optional[List[str]] = None
+    correct_answers: Optional[List[str]] = None
+
+    @field_validator("questions", mode="before")
+    @classmethod
+    def parse_questions(cls, v):
+        import json
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except Exception:
+                return None
+        return v
+
+    @field_validator("student_answers", mode="before")
+    @classmethod
+    def parse_student_answers(cls, v):
+        import json
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except Exception:
+                return None
+        return v
 
     @field_validator("correct_answers", mode="before")
     @classmethod
@@ -192,11 +215,7 @@ class ActivityRead(ActivityBase):
         import json
         if isinstance(v, str):
             try:
-                loaded = json.loads(v)
-                # Eğer dict listesi gelirse, sadece dogru_cevap değerlerini al
-                if loaded and isinstance(loaded, list) and isinstance(loaded[0], dict) and "dogru_cevap" in loaded[0]:
-                    return [item["dogru_cevap"] for item in loaded if "dogru_cevap" in item]
-                return loaded
+                return json.loads(v)
             except Exception:
                 return None
         return v
@@ -257,10 +276,6 @@ class StudentProgressReport(BaseModel):
     max_score: Optional[int] = None
     min_score: Optional[int] = None
     progress_over_time: List[ProgressItem]
-
-# Aktiviteyi tamamlamak için öğrenciye özel request modeli
-class AktiviteTamamlaRequest(BaseModel):
-    feedback: Optional[str] = None
 
 # Student teacher relationship schema
 class StudentTeacherCreate(BaseModel):

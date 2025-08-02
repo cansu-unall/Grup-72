@@ -20,8 +20,7 @@ from ..schemas import (
 )
 from ..models import User, RoleEnum
 from ..database import get_db
-from ..schemas import AktiviteTamamlaRequest
-from ..services.activity import complete_activity_by_student
+
 
 from ..schemas import SinifDurumuItem
 from ..services.activity import get_teacher_class_report
@@ -146,33 +145,39 @@ def read_student_activities(
 
     activities = get_student_activities(db, student_id=student_id, skip=skip, limit=limit, completed=completed)
 
-    # Eğer kendi aktivitelerini çekiyorsa ve quiz ise sadece soruları göster, doğru cevapları gösterme
+    # Eğer kendi aktivitelerini çekiyorsa doğru cevapları gizle
     if current_user.role == RoleEnum.student and student_id == current_user.id:
-        import json
         result = []
         for activity in activities:
-            activity_dict = activity.__dict__.copy() if not hasattr(activity, 'dict') else activity.dict()
-            if hasattr(activity, 'activity_type') and activity.activity_type == "quiz":
-                # correct_answers alanı varsa, sadece soruları çıkar
-                questions = []
-                if activity.correct_answers:
-                    try:
-                        correct_answers_list = json.loads(activity.correct_answers)
-                        if isinstance(correct_answers_list, list):
-                            questions = [item["soru"] for item in correct_answers_list if "soru" in item]
-                    except Exception:
-                        questions = []
-                # correct_answers None ise de questions alanı boş liste olarak eklenmeli
-                activity_dict["questions"] = questions
-                # correct_answers alanını öğrenciye göstermiyoruz
-                if "correct_answers" in activity_dict:
-                    del activity_dict["correct_answers"]
-            # ActivityRead modelinde olmayan alanları filtrele, questions eklenebilir
-            from ..schemas import ActivityRead
-            allowed_fields = set(ActivityRead.model_fields.keys()) | {"questions"}
-            filtered = {k: v for k, v in activity_dict.items() if k in allowed_fields}
-            result.append(filtered)
+            # ActivityRead schema'sına uygun dict oluştur
+            activity_dict = {
+                "activity_type": activity.activity_type,
+                "title": activity.title,
+                "description": activity.description,
+                "content": activity.content,
+                "difficulty_level": activity.difficulty_level,
+                "id": activity.id,
+                "student_id": activity.student_id,
+                "completed": activity.completed,
+                "score": activity.score,
+                "feedback": activity.feedback,
+                "created_at": activity.created_at,
+                "completed_at": activity.completed_at,
+                "questions": None,
+                "correct_answers": None
+            }
+            
+            # Questions varsa parse et
+            if activity.questions:
+                try:
+                    import json
+                    activity_dict["questions"] = json.loads(activity.questions)
+                except Exception:
+                    activity_dict["questions"] = None
+            
+            result.append(activity_dict)
         return result
+    
     # Diğer durumlarda olduğu gibi dön
     return activities
 
@@ -257,20 +262,6 @@ def get_student_progress(
         for item in rapor["progress_over_time"]
     ]
     return StudentProgressReport(**rapor)
-
-# Öğrencinin kendi aktivitesini tamamlaması için endpoint
-@router.post("/ogrenci/{activity_id}/tamamla", response_model=ActivityRead)
-def ogrenci_aktivite_tamamla(
-    activity_id: int,
-    tamamla_data: AktiviteTamamlaRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(role_required([RoleEnum.student]))
-):
-    """
-    Öğrenci kendi aktivitesini tamamlar. Skor sistem tarafından otomatik hesaplanır.
-    Sadece öğrenci kendi aktivitesi için erişebilir.
-    """
-    return complete_activity_by_student(db, activity_id, current_user.id, tamamla_data)
 
 # --- SINIF DURUMU RAPORU ENDPOINTİ ---
 

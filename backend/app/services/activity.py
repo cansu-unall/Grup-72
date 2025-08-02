@@ -9,7 +9,7 @@ from typing import List, Optional
 
 from ..models import Activity, User, RoleEnum, StudentTeacher, ParentChild
 from ..schemas import ActivityCreate, ActivityUpdate, ActivityRead
-from ..schemas import AktiviteTamamlaRequest, CocukGelisimItem
+from ..schemas import CocukGelisimItem
 from ..schemas import OgrenciDurumItem
 
 from rapidfuzz import fuzz
@@ -89,6 +89,25 @@ def get_student_status_report(db: Session, student_id: int) -> OgrenciDurumItem:
         zorlandigi_kelimeler=zorlandigi_kelimeler
     )
 
+def filter_activity_for_security(activity: Activity, include_answers: bool = None) -> Activity:
+    """
+    Aktiviteyi güvenlik kurallarına göre filtreler.
+    - Tamamlanmamış quiz'lerde doğru cevapları gizler
+    - include_answers=True ise (quiz tamamlandığında) doğru cevapları gösterir
+    """
+    # Yeni bir kopya oluştur ki orijinal objeyi değiştirmeyelim
+    import copy
+    filtered_activity = copy.deepcopy(activity)
+    
+    # Eğer quiz değilse veya tamamlanmamışsa doğru cevapları gizle
+    if (activity.activity_type != "quiz" or 
+        not activity.completed or 
+        include_answers is False):
+        filtered_activity.correct_answers = None
+        filtered_activity.student_answers = None
+    
+    return filtered_activity
+
 # Aktivite oluşturma servisi
 def create_activity(db: Session, activity: ActivityCreate):
     # Öğrenci kontrolü
@@ -109,14 +128,14 @@ def create_activity(db: Session, activity: ActivityCreate):
     db.add(db_activity)
     db.commit()
     db.refresh(db_activity)
-    return db_activity
+    return filter_activity_for_security(db_activity)
 
 # Aktivite getirme servisi
 def get_activity(db: Session, activity_id: int):
     db_activity = db.query(Activity).filter(Activity.id == activity_id).first()
     if not db_activity:
         raise HTTPException(status_code=404, detail="Aktivite bulunamadı")
-    return db_activity
+    return filter_activity_for_security(db_activity)
 
 # Öğrencinin tüm aktivitelerini getirme servisi
 def get_student_activities(db: Session, student_id: int, skip: int = 0, limit: int = 100, 
@@ -133,7 +152,8 @@ def get_student_activities(db: Session, student_id: int, skip: int = 0, limit: i
         query = query.filter(Activity.completed == completed)
     
     activities = query.offset(skip).limit(limit).all()
-    return activities
+    # Her aktiviteyi güvenlik filtresi ile döndür
+    return [filter_activity_for_security(activity) for activity in activities]
 
 # Aktivite güncelleme servisi
 def update_activity(db: Session, activity_id: int, activity_update: ActivityUpdate):
@@ -177,7 +197,8 @@ def get_teacher_activities(db: Session, teacher_id: int) -> List[ActivityRead]:
         return []
     # Öğretmenin oluşturduğu aktiviteleri getir
     activities = db.query(Activity).filter(Activity.student_id.in_(student_ids)).all()
-    return activities
+    # Öğretmenler tamamlanan quiz'lerde doğru cevapları görebilir
+    return [filter_activity_for_security(activity, include_answers=activity.completed) for activity in activities]
 
 # Öğretmenin aktivitelerinde dinamik arama servisi
 def search_teacher_activities(
@@ -199,7 +220,9 @@ def search_teacher_activities(
         query = query.filter(Activity.description.ilike(f"%{description.strip()}%"))
     if difficulty_level is not None:
         query = query.filter(Activity.difficulty_level == difficulty_level)
-    return query.all()
+    activities = query.all()
+    # Öğretmenler tamamlanan quiz'lerde doğru cevapları görebilir
+    return [filter_activity_for_security(activity, include_answers=activity.completed) for activity in activities]
 
 # Öğrenci ilerleme raporu servisi
 def get_student_progress_report(db: Session, student_id: int):
@@ -235,32 +258,6 @@ def get_student_progress_report(db: Session, student_id: int):
         "min_score": en_dusuk_skor,
         "progress_over_time": progress_over_time
     }
-
-# Öğrencinin kendi aktivitesini tamamlaması için servis
-def complete_activity_by_student(db: Session, activity_id: int, user_id: int, tamamla_data: AktiviteTamamlaRequest):
-    activity = db.query(Activity).filter(Activity.id == activity_id).first()
-    if not activity:
-        raise HTTPException(status_code=404, detail="Aktivite bulunamadı")
-    if activity.student_id != user_id:
-        raise HTTPException(status_code=403, detail="Sadece kendi aktivitenizi tamamlayabilirsiniz.")
-    if activity.completed:
-        raise HTTPException(status_code=400, detail="Bu aktivite zaten tamamlanmış.")
-
-    activity.completed = True
-    activity.feedback = tamamla_data.feedback
-    activity.completed_at = datetime.now()
-
-    # Otomatik skor hesaplama (örnek: quiz için)
-    if activity.activity_type == "quiz":
-        activity.score = calculate_quiz_score(activity)
-    else:
-        activity.score = None
-
-    db.commit()
-    db.refresh(activity)
-    return activity
-
-    # ...existing code...
 
 # Öğretmenin sınıfındaki öğrencilerin genel durum raporu servisi
 def get_teacher_class_report(db: Session, teacher_id: int):
@@ -335,8 +332,46 @@ def answer_quiz_activity_by_student(db: Session, activity_id: int, answer_data: 
         raise HTTPException(status_code=403, detail="Sadece ilgili öğrenci veya admin cevaplayabilir.")
     if activity.student_id != answer_data.student_id:
         raise HTTPException(status_code=400, detail="Aktivite bu öğrenciye ait değil.")
-    # Cevaplar JSON olarak kaydedilir
-    activity.student_answers = json.dumps(answer_data.cevaplar)
+    
+    # Eğer aktivite zaten tamamlanmışsa hata ver
+    if activity.completed:
+        raise HTTPException(status_code=400, detail="Bu aktivite zaten tamamlanmış.")
+    
+    # Doğru cevapları al
+    if not activity.correct_answers:
+        raise HTTPException(status_code=400, detail="Bu quiz için doğru cevaplar tanımlanmamış.")
+    
+    try:
+        correct_answers = json.loads(activity.correct_answers)
+    except:
+        raise HTTPException(status_code=500, detail="Doğru cevaplar parse edilemedi.")
+    
+    # Skor hesapla
+    student_answers = answer_data.cevaplar
+    if len(student_answers) != len(correct_answers):
+        raise HTTPException(status_code=400, detail="Cevap sayısı soru sayısı ile eşleşmiyor.")
+    
+    correct_count = 0
+    for i, (student_answer, correct_answer) in enumerate(zip(student_answers, correct_answers)):
+        # Fuzzy matching kullanarak benzer cevapları da doğru kabul et
+        # Disleksi öğrencileri için daha esnek yaklaşım: %70 ve üzeri benzerlik oranını doğru kabul ediyoruz
+        # partial_ratio kullanarak kısmi eşleşmeleri de değerlendiriyoruz
+        similarity_ratio = max(
+            fuzz.ratio(student_answer.strip().lower(), correct_answer.strip().lower()),
+            fuzz.partial_ratio(student_answer.strip().lower(), correct_answer.strip().lower())
+        )
+        if similarity_ratio >= 70:
+            correct_count += 1
+    
+    score = int((correct_count / len(correct_answers)) * 100)
+    
+    # Aktiviteyi güncelle
+    activity.student_answers = json.dumps(student_answers, ensure_ascii=False)
+    activity.score = score
+    activity.completed = True
+    activity.completed_at = datetime.now()
+    
     db.commit()
     db.refresh(activity)
-    return activity
+    # Quiz tamamlandı, doğru cevaplarla birlikte döndür
+    return filter_activity_for_security(activity, include_answers=True)

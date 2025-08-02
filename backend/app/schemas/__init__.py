@@ -8,6 +8,5 @@ from .schemas import (
     TeacherProfileBase, TeacherProfileCreate, TeacherProfileRead,
     ParentProfileBase, ParentProfileCreate, ParentProfileRead,
     StudentProgressReport, ProgressItem,
-    AktiviteTamamlaRequest,
     SinifDurumuItem, CocukGelisimItem, CocukGelisimRaporu, OgrenciDurumItem
 )

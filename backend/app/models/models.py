@@ -135,6 +135,7 @@ class Activity(Base):
     # Quiz için cevaplar
     student_answers = Column(Text, nullable=True)  # JSON string olarak tutulacak
     correct_answers = Column(Text, nullable=True)  # JSON string olarak tutulacak
+    questions = Column(Text, nullable=True)  # Sorular JSON string olarak tutulacak
 
     student = relationship("User", back_populates="student_activities")
 

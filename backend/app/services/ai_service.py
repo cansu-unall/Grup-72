@@ -107,8 +107,12 @@ def generate_comprehension_questions_with_gemini(db: Session, activity_id: int) 
         if start != -1 and end != -1:
             text = text[start:end+1]
         sorular = json.loads(text)
-        # Doğru cevapları ve soruları birlikte kaydet (her biri {"soru":..., "dogru_cevap":...})
-        activity.correct_answers = json.dumps(sorular, ensure_ascii=False)
+        # Soruları ve doğru cevapları ayrı ayrı kaydet
+        questions_only = [item["soru"] for item in sorular if "soru" in item]
+        correct_answers_only = [item["dogru_cevap"] for item in sorular if "dogru_cevap" in item]
+        
+        activity.questions = json.dumps(questions_only, ensure_ascii=False)
+        activity.correct_answers = json.dumps(correct_answers_only, ensure_ascii=False)
         db.commit()
         return sorular
     except Exception as e:
