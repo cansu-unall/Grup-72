@@ -227,3 +227,175 @@ Sprint boyunca herkesin katkısı dengeliydi. Geliştirilen her özellik Notion 
 
 Sprint 2 sonunda ortaya çıkan sağlam altyapı, projenin yapay zeka ve disleksi analiz aşamasına geçişi için güçlü bir temel oluşturdu.
 
+# Sprint 3 – Dyslexia AI
+
+## **Tahmin Edilen Tamamlanacak Puan**
+
+250 Puan
+
+**Tahmin Mantığı**
+
+Toplam proje iş yükü başlangıçta **750 puan** olarak planlanmıştır. Bu iş yükü **3 sprint** süresince eşit şekilde dağılmıştır. Her sprint için **ortalama 250 puanlık gelişim** hedeflenmiştir.
+
+- **Sprint 1 tamamlandı → 250 puan**
+- **Sprint 2 tamamlandı → 250 puan**
+- Sprint 3 tamamlandı  **→ +250 puan** ⟶ Toplamda 75**0 puan** ilerleme kaydedilmiştir.
+
+## **Daily Scrum**
+
+Sprint 3 süresince takım içi iletişim WhatsApp grubu üzerinden aktif olarak sürdürüldü. Geliştiriciler, günlük ilerlemelerini, karşılaştıkları problemleri ve çözüm önerilerini grup içerisinde açıkça paylaştı.
+
+Frontend ve backend geliştirmeleri paralel ilerletildi. Özellikle öğretmen paneli ve aktivite yönetimi gibi görevlerin entegrasyonu sırasında sık sık teknik detaylar tartışıldı. Takım üyeleri birbirlerine destek olarak çözüm yolları önerdi.
+
+Bu sprintte geliştirilen özelliklerin yoğunluğu nedeniyle bazı günlerde detaylı teknik konuşmaların yanı sıra, tasarım kararları da grup sohbetine dahil edildi.
+
+Ayrıca haftalık değerlendirme toplantısı Google Meet üzerinden gerçekleştirildi. Bu toplantıda:
+
+- Geliştirilen fonksiyonlar demo ile sunuldu,
+- Kodlarda yapılan kritik değişiklikler ekrana yansıtılarak açıklandı,
+- API test senaryoları ve UI üzerinde yapılan kullanıcı deneyimi iyileştirmeleri gözden geçirildi.
+
+Takım üyeleri sorumluluklarını yerine getirerek, kodlarını zamanında GitHub üzerinden paylaşmaya devam etti. Her görev sonunda kod gözden geçirme ve test süreçleri yine birlikte yürütüldü.
+
+ **Görsel Kanıtlar:**
+
+- [WhatsApp Yazışmaları 5](docs/daily_scrum_screenshots/WhatsApp_Yazışmaları_5.png.jpg) & [WhatsApp Yazışmaları 6](docs/daily_scrum_screenshots/WhatsApp_Yazışmaları_6.png.jpg)
+- [Google Meet ekran görüntüsü – Sprint 3 Haftalık Toplantı](docs/daily_scrum_screenshots/Google_Meet_Sprint_3_Toplantısı.png.jpg)
+
+## **Sprint Board Updates**
+
+## **Sprint Board Updates**
+
+Sprint 3 süresince görevlerin planlanması, takibi ve durumu **Notion Sprint Board** üzerinden düzenli olarak yürütülmüştür. Tüm görevler; sorumlu kişilere atanmış, öncelik durumları belirlenmiş ve **"To Do"**, **"In Progress"**, **"Resolved"**, **"Won’t Fix"** gibi etiketlerle sınıflandırılmıştır.
+
+Takip edilen başlıca noktalar:
+
+- API entegrasyonlarındaki teknik sorunlar (token doğrulama, state yönetimi, routing) çözülmüştür.
+- Öğrenci, öğretmen ve veli rollerine özel panel görevleri sprint board’a eklenmiş ve ilgili ilerlemeler günlük olarak işlenmiştir.
+- Telaffuz düzeltme modülü çıkarılmış ve bu karar Sprint Board üzerinden işaretlenmiştir.
+- Ürün geliştirme istekleri ve bazı hatalar “Won’t Fix” veya “Re-assigned” olarak güncellenmiştir.
+
+ Kullanılan araçlar:
+
+- **Görev Takibi:** Notion
+- **Destekleyici Tablolar:**
+    - Hata & Sorun Takip Tablosu
+    - Ürün Geliştirme Talepleri
+    - Sprint Planlama ve Gerçekleşen Takibi
+
+Notion Sprint Board Linki:
+
+https://bit.ly/Grup-72
+
+ Notion Ekran Görüntüleri:
+
+- Görev Takip Tablosu
+- Hata ve Sorun Takip Tablosu
+- Ürün Geliştirme Talepleri
+- Sprint Süreci Güncellemeleri
+
+## Ürün Durumu Ekran Görüntüleri
+Sprint 3 kapsamında geliştirilen işlevsellikler, arayüz ekranları ve AI destekli özellikler aşağıdaki gibi tamamlanmıştır. Ekip, öğrenci–öğretmen–veli panelleri başta olmak üzere tüm roller için temel deneyimleri aktif hale getirmiştir. Özellikle öğrenci skor analizi, AI ile içerik üretimi ve yardım botu gibi özellikler bu sprintte başarıyla entegre edilmiştir.
+
+### Öğrenci Paneli – Aktivite Detayı ve Quiz Çözümü
+Öğrencinin, kendisine atanan aktivite içeriğini görerek quiz sorularını yanıtladığı arayüz.
+### Quiz Sonuçları ve Geri Bildirim
+Öğrenci tamamladığı quiz sonrası doğru cevap sayısını ve sistemden gelen geri bildirimi görebilir.
+
+### Öğrenci Gelişim Raporu
+Öğrencinin genel başarı durumu, en son katıldığı aktiviteler ve başarı yüzdesi grafiksel olarak sunulmuştur.
+
+### AI Destekli Yardım Botu
+Gemini 2.5 Flash modeli ile çalışan yardım botu, öğrencilerin anlamadığı kavramlara anlık destek verir.
+### Öğretmen Paneli – AI ile Quiz Soru Üretimi
+Öğretmenler, metne dayalı olarak AI destekli çoktan seçmeli quiz soruları üretebilir.
+
+### AI Destekli Metin Sadeleştirme
+Zor metinler öğretmen tarafından Gemini modeli aracılığıyla sadeleştirilir.
+
+### Zor Kelime Yönetimi – Öğrenci Paneli
+Öğrenciler zorlandıkları kelimeleri işaretleyip daha sonra tekrar edebilir.
+
+### Öğretmen Paneli – Öğrenci Raporu
+Öğretmenler tüm öğrencilerinin skor durumlarını, katıldığı aktiviteleri ve gelişim özetini tek panelde görür.
+
+### Veli Paneli – Çocuk Gelişim Özeti
+Veliler, çocuklarının aktivite geçmişini, başarı düzeylerini ve zorlandıkları alanları görsel olarak takip eder.
+
+### Aktivite Oluşturma Arayüzü
+Öğretmenler öğrenciye özel içerik oluşturabilir, zorluk seviyesini belirleyerek aktivite tanımlar.
+
+### Aktivite Arama ve Detay
+Öğretmen, oluşturduğu aktiviteleri filtreleyerek düzenleyebilir veya yeni içerikler hazırlayabilir.
+
+Tüm bu geliştirmeler, Sprint 3 hedeflerinin başarıyla yerine getirildiğini ve ürünün son kullanıcıya sunulmaya hazır hale geldiğini göstermektedir.
+
+## Sprint Review
+
+Sprint 3’te, projenin fonksiyonel çekirdeği tamamlanarak tüm roller (öğrenci, öğretmen, veli) için eksiksiz bir deneyim sunan paneller geliştirildi. AI entegrasyonları (metin üretimi, sadeleştirme, quiz üretimi, yardım botu), öğrenci skor analizi ve zor kelime yönetimi gibi gelişmiş özellikler başarıyla uygulamaya alındı.
+
+**Tamamlanan Başlıca Geliştirmeler:**
+
+**Yapay Zeka Destekli Özellikler:**
+- Öğretmen için metin üretme, sadeleştirme ve quiz sorusu oluşturma endpoint’leri
+- Öğrenci için AI destekli yardım botu
+- Öğrencinin cevapladığı quizlere göre otomatik skor hesaplama ve geri bildirim üretme
+
+**Raporlama & Gelişim Takibi:**
+- Öğrencinin bireysel gelişim raporu (skor, aktivite sayısı, tarih bazlı ilerleme)
+- Öğretmenin tüm sınıfı için istatistiksel analiz
+- Veli için çocuğunun genel gelişim özeti ve zorlandığı kelimeler
+
+**Yeni Arayüzler:**
+- Öğrenci aktiviteleri sayfası, detay ve quiz çözüm ekranları
+- Zor kelime işaretleme ve tekrar sayfası
+- Öğretmen paneli üzerinden öğrenci yönetimi ve aktivite oluşturma
+- Veli paneli üzerinden çocuğa dair analiz ekranı
+  
+**Çıkarılan Özellik:**
+- Telaffuz analizi özelliği teknik yetersizlikler (speech-to-text ve AI sınırlamaları) nedeniyle bu sprintte kapsam dışı bırakıldı.
+
+**Genel Değerlendirme:**
+Tüm takım üyeleri kendi görev alanlarındaki geliştirmeleri zamanında ve eksiksiz tamamladı. Teknik zorluklara rağmen AI entegrasyonları, kullanıcı arayüzleri ve veri işleme akışları senkron şekilde tamamlandı.
+
+Sprint 3 sonunda proje, demo sunumu yapılabilecek olgunluğa erişmiştir. Yapılan geliştirmeler, ürünün gerçek kullanıcı testlerine açılması ve sunuma hazır hale gelmesini sağlamıştır.
+
+
+## Sprint Retrospective
+
+### İyi Gidenler
+
+- **Fonksiyonel bütünlük sağlandı:** Öğrenci, öğretmen ve veli rollerine ait tüm temel işlevler geliştirildi ve senkron şekilde çalıştı.
+- **AI özellikleri başarıyla entegre edildi:** Metin üretimi, sadeleştirme, quiz üretimi ve yardım botu gibi karmaşık AI işlemleri backend ve frontend’e sorunsuz entegre edildi.
+- **Ekip içi iş bölümü netti:** Geliştiriciler arasında görev dağılımı dengeliydi, bağımlılıklar iyi yönetildi.
+- **Düzenli iletişim kuruldu:** WhatsApp üzerinden günlük bilgi akışı sürdürüldü, haftalık toplantılarda ekran paylaşımlarıyla ilerleme kontrol edildi.
+- **Notion Sprint Board aktif kullanıldı:** Görevler anlık olarak güncellendi, takım şeffaflık içinde ilerledi.
+
+### Zorluklar
+
+- **Telaffuz analizi beklendiği gibi sonuç vermedi:** Speech-to-text servislerinin limitleri nedeniyle analiz istenilen doğrulukta çalışmadı ve sprint dışına çıkarıldı.
+- **Bazı AI API çıktıları beklenenden farklıydı:** LLM modellerinden alınan sonuçlar zaman zaman öngörülemezdi, bu da test süresini uzattı.
+- **Frontend görsel düzenlemelerde zaman kaybı yaşandı:** Komponentlerin stil ve responsive uyumluluğu bazı sayfalarda zaman aldı.
+
+### Alınan İyileştirme Kararları
+
+- **Çıkartılan özelliklerin nedenleri açıkça dökümante edilecek** (örn. telaffuz analizi)
+- **AI çıktılarının test senaryoları çeşitlendirilecek**: Yanıt kalitesi için prompt engineering geliştirilecek.
+- **Demo öncesi odak:** Kullanıcı deneyimi (UX) ve arayüz iyileştirmeleri için mini UI audit yapılacak.
+
+### Katılanlar:
+
+- **Scrum Master:** Ayşe Cansu Ünal
+- **Product Owner:** Ezgi Derya Özkan
+- **Developer 1:** Mahmut Aktaş
+- **Developer 2:** Emir Buğra Irmak
+
+## Sprint 3 Notları
+
+Sprint 3’ün temel amacı, disleksi destek platformunun öğrenci, öğretmen ve veli rollerine yönelik işlevsel tamamlayıcılığını sağlamaktı. Bu kapsamda hem backend hem de frontend tarafında yapay zeka destekli içerik üretimi, gelişim takibi, kullanıcı-aktivite etkileşimi ve kişiselleştirilmiş raporlama özellikleri geliştirildi.
+
+**Backend tarafında** öğrencinin gelişimini analiz eden, aktivite tamamlama süreçlerini yöneten, öğretmen için metin üretme/sadeleştirme ve quiz oluşturma gibi yapay zeka destekli endpoint’ler başarıyla geliştirildi. Yardımcı chatbot, zor kelime işaretleme ve tekrarlama gibi öğrenci destekleyici servisler tamamlandı. Telaffuz analizi hedeflenmiş ancak teknik sınırlar nedeniyle bu sprintte dışarıda bırakılmıştır.
+
+**Frontend tarafında** öğrenci paneli üzerinden aktivite çözme, skor ve geri bildirim görüntüleme, AI destekli yardım alma, zorlandığı kelimeleri işaretleme ve takip etme, gelişim raporunu grafiklerle görme özellikleri başarıyla sunuldu. Öğretmen panelinde öğrencilere özel aktivite atama, metin ve quiz üretme, sınıf durumu raporlama modülleri geliştirildi. Veli panelinde çocuğunun gelişimini takip eden grafik ve özet bileşenleri tasarlandı.
+
+Bu sprint sonunda ürün, minimum uygulanabilir ürün (MVP) seviyesinin ötesine geçmiş, yapay zeka destekli bireyselleştirilmiş eğitim deneyimini destekleyecek düzeye getirilmiştir.
