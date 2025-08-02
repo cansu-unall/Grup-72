@@ -297,35 +297,37 @@ https://bit.ly/Grup-72
 ## Ürün Durumu Ekran Görüntüleri
 Sprint 3 kapsamında geliştirilen işlevsellikler, arayüz ekranları ve AI destekli özellikler aşağıdaki gibi tamamlanmıştır. Ekip, öğrenci–öğretmen–veli panelleri başta olmak üzere tüm roller için temel deneyimleri aktif hale getirmiştir. Özellikle öğrenci skor analizi, AI ile içerik üretimi ve yardım botu gibi özellikler bu sprintte başarıyla entegre edilmiştir.
 
-### Öğrenci Paneli – Aktivite Detayı ve Quiz Çözümü
+- Öğrenci Paneli – Aktivite Detayı ve Quiz Çözümü
 Öğrencinin, kendisine atanan aktivite içeriğini görerek quiz sorularını yanıtladığı arayüz.
-### Quiz Sonuçları ve Geri Bildirim
+
+-Quiz Sonuçları ve Geri Bildirim
 Öğrenci tamamladığı quiz sonrası doğru cevap sayısını ve sistemden gelen geri bildirimi görebilir.
 
-### Öğrenci Gelişim Raporu
+- Öğrenci Gelişim Raporu
 Öğrencinin genel başarı durumu, en son katıldığı aktiviteler ve başarı yüzdesi grafiksel olarak sunulmuştur.
 
-### AI Destekli Yardım Botu
+- AI Destekli Yardım Botu
 Gemini 2.5 Flash modeli ile çalışan yardım botu, öğrencilerin anlamadığı kavramlara anlık destek verir.
-### Öğretmen Paneli – AI ile Quiz Soru Üretimi
+
+-Öğretmen Paneli – AI ile Quiz Soru Üretimi
 Öğretmenler, metne dayalı olarak AI destekli çoktan seçmeli quiz soruları üretebilir.
 
-### AI Destekli Metin Sadeleştirme
+- AI Destekli Metin Sadeleştirme
 Zor metinler öğretmen tarafından Gemini modeli aracılığıyla sadeleştirilir.
 
-### Zor Kelime Yönetimi – Öğrenci Paneli
+- Zor Kelime Yönetimi – Öğrenci Paneli
 Öğrenciler zorlandıkları kelimeleri işaretleyip daha sonra tekrar edebilir.
 
-### Öğretmen Paneli – Öğrenci Raporu
+- Öğretmen Paneli – Öğrenci Raporu
 Öğretmenler tüm öğrencilerinin skor durumlarını, katıldığı aktiviteleri ve gelişim özetini tek panelde görür.
 
-### Veli Paneli – Çocuk Gelişim Özeti
+- Veli Paneli – Çocuk Gelişim Özeti
 Veliler, çocuklarının aktivite geçmişini, başarı düzeylerini ve zorlandıkları alanları görsel olarak takip eder.
 
-### Aktivite Oluşturma Arayüzü
+- Aktivite Oluşturma Arayüzü
 Öğretmenler öğrenciye özel içerik oluşturabilir, zorluk seviyesini belirleyerek aktivite tanımlar.
 
-### Aktivite Arama ve Detay
+- Aktivite Arama ve Detay
 Öğretmen, oluşturduğu aktiviteleri filtreleyerek düzenleyebilir veya yeni içerikler hazırlayabilir.
 
 Tüm bu geliştirmeler, Sprint 3 hedeflerinin başarıyla yerine getirildiğini ve ürünün son kullanıcıya sunulmaya hazır hale geldiğini göstermektedir.
