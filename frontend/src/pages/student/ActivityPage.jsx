@@ -22,23 +22,25 @@ const ActivityPage = () => {
             try {
                 const response = await api.get(`/api/aktiviteler/${activityId}`);
                 const fetchedActivity = response.data;
+                console.log("API'den gelen aktivite verisi:", fetchedActivity);
 
+
+                // --- ESKİ VERİ DÖNÜŞTÜRME KODUNU SİLİN ---
                 // Gelen 'questions' verisinin her zaman obje dizisi olmasını sağla
-                if (Array.isArray(fetchedActivity.questions)) {
-                    // Eğer 'questions' bir string dizisi ise, onu obje dizisine çevir.
-                    if (fetchedActivity.questions.length > 0 && typeof fetchedActivity.questions[0] === 'string') {
-                         fetchedActivity.questions = fetchedActivity.questions.map(q_text => ({ question_text: q_text, options: [] }));
-                    }
-                } else {
-                    // Eğer 'questions' hiç yoksa veya dizi değilse, boş bir dizi ata.
-                    fetchedActivity.questions = [];
-                }
+                // if (Array.isArray(fetchedActivity.questions)) {
+                //     // ...
+                // } else {
+                //     fetchedActivity.questions = [];
+                // }
+                // --- SİLİNECEK ALAN SONU ---
 
                 setActivity(fetchedActivity);
 
+                // Quiz ise ve henüz tamamlanmadıysa, cevap state'ini başlat
                 if (fetchedActivity?.activity_type === 'quiz' && !fetchedActivity.completed) {
                     const initialAnswers = {};
-                    fetchedActivity.questions.forEach((_, index) => {
+                    // 'questions' alanı yoksa veya boşsa diye kontrol ekle
+                    (fetchedActivity.questions || []).forEach((_, index) => {
                         initialAnswers[index] = '';
                     });
                     setAnswers(initialAnswers);

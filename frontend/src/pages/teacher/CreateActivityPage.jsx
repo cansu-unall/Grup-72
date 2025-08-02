@@ -107,49 +107,44 @@ const CreateActivityPage = () => {
         setIsSubmitting(true);
 
         try {
-            // Okuma aktivitesi için tek adımlı işlem
+            let payload;
+
             if (activity.activity_type === 'okuma') {
+                // --- OKUMA AKTİVİTESİ PAYLOAD'U ---
                 if (!activity.title || !activity.content || !activity.student_id) {
                     toast.error("Lütfen Başlık, İçerik ve Öğrenci ID alanlarını doldurun.");
                     setIsSubmitting(false);
                     return;
                 }
-                const payload = {
+                payload = {
                     activity_type: activity.activity_type,
                     title: activity.title,
                     description: activity.description,
                     content: activity.content,
-                    difficulty_level: activity.difficulty_level,
-                    student_id: activity.student_id,
+                    difficulty_level: Number(activity.difficulty_level),
+                    student_id: Number(activity.student_id),
                 };
-                await api.post('/api/aktiviteler/', payload);
             } 
-            // Quiz aktivitesi için iki adımlı işlem
             else if (activity.activity_type === 'quiz') {
+                // --- QUIZ AKTİVİTESİ PAYLOAD'U ---
                 if (!activity.title || !activity.student_id || activity.questions.some(q => !q.question_text || !q.correct_answer || q.options.some(opt => opt.trim() === ''))) {
-                    toast.error("Lütfen Başlık, Öğrenci ID ve tüm sorular için soru metni, doğru cevap ve tüm seçenek alanlarını doldurun.");
+                    toast.error("Lütfen Başlık, Öğrenci ID ve tüm sorular için gerekli alanları doldurun.");
                     setIsSubmitting(false);
                     return;
                 }
-
-                // Adım 1: Sorular olmadan aktivite kabuğunu oluştur
-                const baseActivityPayload = {
+                payload = {
                     activity_type: activity.activity_type,
                     title: activity.title,
                     description: activity.description,
-                    content: "Quiz soruları eklenecek.", // API'ye boş olmayan bir içerik gönder
-                    difficulty_level: activity.difficulty_level,
-                    student_id: activity.student_id,
-                };
-                const createResponse = await api.post('/api/aktiviteler/', baseActivityPayload);
-                const newActivityId = createResponse.data.id;
-
-                // Adım 2: Oluşturulan aktiviteyi sorularla güncelle
-                const updatePayload = {
+                    difficulty_level: Number(activity.difficulty_level),
+                    student_id: Number(activity.student_id),
                     questions: activity.questions,
+                    content: "Bu bir quiz aktivitesidir.", // Zorunlu content alanı için placeholder
                 };
-                await api.put(`/api/aktiviteler/${newActivityId}`, updatePayload);
             }
+
+            // Tek bir POST isteği ile aktiviteyi oluştur
+            await api.post('/api/aktiviteler/', payload);
 
             toast.success('Aktivite başarıyla oluşturuldu ve öğrenciye atandı!');
             setActivity(initialActivityState);
@@ -157,8 +152,19 @@ const CreateActivityPage = () => {
 
         } catch (error) {
             console.error("Aktivite oluşturma hatası:", error);
-            const errorMessage = error.response?.data?.detail || 'Aktivite oluşturulurken bir hata oluştu.';
-            toast.error(Array.isArray(errorMessage) ? errorMessage[0].msg : errorMessage);
+            if (error.response?.data?.detail) {
+                const errorDetails = error.response.data.detail;
+                if (Array.isArray(errorDetails)) {
+                    // FastAPI'den gelen detaylı validasyon hatalarını göster
+                    errorDetails.forEach(err => {
+                        toast.error(`${err.loc.slice(-1)[0]}: ${err.msg}`);
+                    });
+                } else {
+                    toast.error(String(errorDetails));
+                }
+            } else {
+                toast.error('Aktivite oluşturulurken bilinmeyen bir hata oluştu.');
+            }
         } finally {
             setIsSubmitting(false);
         }
