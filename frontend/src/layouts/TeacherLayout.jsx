@@ -9,6 +9,7 @@ const TeacherLayout = ({ children }) => {
     { path: '/teacher/dashboard', label: 'Anasayfa' },
     { path: '/teacher/students', label: 'Öğrencilerim' },
     { path: '/teacher/create-activity', label: 'Aktivite Oluştur' },
+    { path: '/teacher/search-activities', label: 'Aktivite Ara' },
     { path: '/teacher/class-status', label: 'Sınıf Durumu' },
   ];
 

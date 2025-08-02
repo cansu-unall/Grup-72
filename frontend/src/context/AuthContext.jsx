@@ -70,12 +70,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('token');
-    delete api.defaults.headers.common['Authorization'];
-    navigate('/login');
+  const logout = async () => { // Fonksiyonu async yap
+    try {
+      // Backend'den çıkış yapma isteği gönder
+      await api.post('/api/giris/cikis-yap');
+    } catch (err) {
+      console.error("Çıkış yapılırken sunucu hatası:", err);
+      // Hata olsa bile client tarafında çıkış yapmaya devam et
+    } finally {
+      setToken(null);
+      setUser(null);
+      localStorage.removeItem('token');
+      delete api.defaults.headers.common['Authorization'];
+      navigate('/login');
+    }
   };
 
   const value = { user, token, loading, error, login, register, logout, setError };

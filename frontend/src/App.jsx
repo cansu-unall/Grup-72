@@ -18,6 +18,8 @@ import HelpBotPage from './pages/student/HelpBotPage';
 import TeacherStudentsPage from './pages/teacher/TeacherStudentsPage';
 import CreateActivityPage from './pages/teacher/CreateActivityPage';
 import ClassStatusPage from './pages/teacher/ClassStatusPage';
+import SearchActivitiesPage from './pages/teacher/SearchActivitiesPage';
+import StudentReportPageForTeacher from './pages/teacher/StudentReportPage';
 import ParentChildrenPage from './pages/parent/ParentChildrenPage';
 import ChildReportPage from './pages/parent/ChildReportPage';
 
@@ -62,6 +64,8 @@ function App() {
               <Route path="students" element={<TeacherStudentsPage />} />
               <Route path="create-activity" element={<CreateActivityPage />} />
               <Route path="class-status" element={<ClassStatusPage />} />
+              <Route path="student-report/:studentId" element={<StudentReportPageForTeacher />} />
+              <Route path="search-activities" element={<SearchActivitiesPage />} />
             </Routes>
           </TeacherLayout>
         </ProtectedRoute>

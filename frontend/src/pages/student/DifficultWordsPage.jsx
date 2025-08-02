@@ -6,7 +6,7 @@ const DifficultWordsPage = () => {
     useEffect(() => {
         const fetchWords = async () => {
             try {
-                const response = await api.get('/api/kelimeler/tekrar');
+                const response = await api.get('/kelimeler/tekrar');
                 setWords(
                     response.data.sort((a, b) => b.tekrar_sayisi - a.tekrar_sayisi)
                 );

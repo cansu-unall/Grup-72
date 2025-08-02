@@ -14,7 +14,7 @@ const StudentActivitiesPage = () => {
         const fetchActivities = async () => {
             if (!user) return;
             try {
-                const response = await api.get(`/aktiviteler/ogrenci/${user.id}`);
+                const response = await api.get(`/api/aktiviteler/ogrenci/${user.id}`);
                 setActivities(response.data);
             } catch (error) {
                 console.error("Aktiviteler yüklenemedi:", error);
@@ -40,7 +40,7 @@ const StudentActivitiesPage = () => {
                                 {activity.completed ? 'Tamamlandı' : 'Bekliyor'}
                             </span>
                         </div>
-                        {activity.completed && (
+                        {activity.completed && activity.score !== null && (
                             <p className="mt-2 font-semibold">Skor: {activity.score}</p>
                         )}
                         <button 
