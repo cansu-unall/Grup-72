@@ -24,34 +24,94 @@ from ..schemas import (
 
 from ..models import User, RoleEnum, StudentTeacher, ParentChild
 from ..database import get_db
-from ..schemas import StudentProfileUpdate
-from ..schemas import StudentProfileUpdate
-
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from typing import List, Optional
-
-from ..services import (
-    create_user, get_user, get_users, update_user,  
-    create_student_teacher_relation, create_parent_child_relation,
-    get_teacher_students, get_parent_children,
-    get_current_active_user, role_required,
-    create_student_profile, create_teacher_profile, create_parent_profile
-)
-from ..schemas import (
-    UserCreate, UserRead, UserReadWithRelations, UserUpdate,
-    StudentTeacherCreate, ParentChildCreate, Role,
-    StudentProfileCreate, StudentProfileRead,
-    TeacherProfileCreate, TeacherProfileRead,
-    ParentProfileCreate, ParentProfileRead
-)
-from ..models import User, RoleEnum, StudentTeacher, ParentChild
-from ..database import get_db
 
 router = APIRouter(
     prefix="/api/kullanicilar",
     tags=["kullanicilar"],
     responses={404: {"description": "Kullanıcı bulunamadı"}},
 )
+
+# Email ile kullanıcı arama endpoint'i (ÖNEMLİ: /{user_id} endpoint'inden ÖNCE olmalı!)
+@router.get("/ara", response_model=List[UserRead])
+def search_users_by_email(
+    email: str = Query(..., description="Email adresi"),
+    role: str = Query("student", description="Kullanıcı rolü"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Email ile kullanıcı ara (Sadece öğretmen ve admin)
+    """
+    if current_user.role not in [RoleEnum.teacher, RoleEnum.admin]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bu işlem için yetkiniz yok"
+        )
+    
+    # Email'de kısmi arama (örn: "ahmet" yazınca "ahmet@okul.com" bulur)
+    users = db.query(User).filter(
+        User.email.ilike(f"%{email}%"),
+        User.role == role
+    ).limit(10).all()
+    
+    return users
+
+# Email ile öğrenci ekleme endpoint'i
+@router.post("/iliskiler/ogrenci-email-ile-ekle", status_code=status.HTTP_201_CREATED)
+def add_student_by_email(
+    student_email: str = Query(..., description="Öğrenci email adresi"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Email ile öğrenci ekleme (Sadece öğretmen)
+    """
+    if current_user.role != RoleEnum.teacher:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bu işlem için yetkiniz yok"
+        )
+    
+    # Öğrenciyi email ile bul
+    student = db.query(User).filter(
+        User.email == student_email,
+        User.role == RoleEnum.student
+    ).first()
+    
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bu email adresine sahip öğrenci bulunamadı"
+        )
+    
+    # İlişki zaten var mı kontrol et
+    existing_relation = db.query(StudentTeacher).filter(
+        StudentTeacher.student_id == student.id,
+        StudentTeacher.teacher_id == current_user.id
+    ).first()
+    
+    if existing_relation:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Bu öğrenci zaten sizin listenizde"
+        )
+    
+    # İlişki oluştur
+    relation = StudentTeacher(
+        student_id=student.id,
+        teacher_id=current_user.id
+    )
+    db.add(relation)
+    db.commit()
+    
+    return {
+        "message": "Öğrenci başarıyla eklendi",
+        "student": {
+            "id": student.id,
+            "full_name": student.full_name,
+            "email": student.email
+        }
+    }
 
 # Tüm öğrenci-öğretmen ilişkilerini listeleyen endpoint (Sadece admin)
 @router.get("/iliskiler/ogrenci-ogretmen", status_code=status.HTTP_200_OK)
@@ -370,24 +430,6 @@ def delete_parent_profile_for_user(
         )
 
     return delete_parent_profile(db=db, user_id=user_id)
-
-@router.post("/iliskiler/ogrenci-ogretmen", status_code=status.HTTP_201_CREATED)
-def create_student_teacher(
-    relation: StudentTeacherCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(role_required([RoleEnum.teacher]))
-):
-    """
-    Öğretmen-öğrenci ilişkisi oluştur (Sadece öğretmenler)
-    """
-    # Sadece kendi öğrencisi olarak ekleyebilir
-    if current_user.id != relation.teacher_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Sadece kendinize öğrenci ekleyebilirsiniz"
-        )
-    
-    return create_student_teacher_relation(db=db, student_id=relation.student_id, teacher_id=relation.teacher_id)
 
 @router.post("/iliskiler/veli-cocuk", status_code=status.HTTP_201_CREATED)
 def create_parent_child(
