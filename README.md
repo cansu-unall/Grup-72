@@ -262,9 +262,8 @@ Takım üyeleri sorumluluklarını yerine getirerek, kodlarını zamanında GitH
 - [WhatsApp Yazışmaları 5](docs/daily_scrum_screenshots/WhatsApp_Yazışmaları_5.png.jpg) & [WhatsApp Yazışmaları 6](docs/daily_scrum_screenshots/WhatsApp_Yazışmaları_6.png.jpg)
 - [Google Meet ekran görüntüsü – Sprint 3 Haftalık Toplantı](docs/daily_scrum_screenshots/Google_Meet_Sprint_3_Toplantısı.png.jpg)
 
-## **Sprint Board Updates**
 
-## **Sprint Board Updates**
+## Sprint Board Updates
 
 Sprint 3 süresince görevlerin planlanması, takibi ve durumu **Notion Sprint Board** üzerinden düzenli olarak yürütülmüştür. Tüm görevler; sorumlu kişilere atanmış, öncelik durumları belirlenmiş ve **"To Do"**, **"In Progress"**, **"Resolved"**, **"Won’t Fix"** gibi etiketlerle sınıflandırılmıştır.
 
