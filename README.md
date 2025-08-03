@@ -288,10 +288,11 @@ https://bit.ly/Grup-72
 
  Notion Ekran Görüntüleri:
 
-- Görev Takip Tablosu
-- Hata ve Sorun Takip Tablosu
-- Ürün Geliştirme Talepleri
-- Sprint Süreci Güncellemeleri
+- [Hedef Takip Tablosu](docs/Sprint3_Hedef_Takip_Tablosu.png.png)
+- [Hata ve Sorun Takip Tablosu](docs/Sprint3_Hata_Takip_Tablosu.png.png)
+- [Ürün Geliştirme Talepleri](docs/Sprint3_Ürün_Geliştirme_Talepleri.png.png)
+- [Projects](docs/Sprint3_Projects.png.png)
+- [Proje Dokümanları Tablosu](docs/Sprint3_Proje_Dokümanları_Tablosu.png.png)
 
 ## Ürün Durumu Ekran Görüntüleri
 Sprint 3 kapsamında geliştirilen işlevsellikler, arayüz ekranları ve AI destekli özellikler aşağıdaki gibi tamamlanmıştır. Ekip, öğrenci–öğretmen–veli panelleri başta olmak üzere tüm roller için temel deneyimleri aktif hale getirmiştir. Özellikle öğrenci skor analizi, AI ile içerik üretimi ve yardım botu gibi özellikler bu sprintte başarıyla entegre edilmiştir.
@@ -344,6 +345,11 @@ Tüm takım üyeleri kendi görev alanlarındaki geliştirmeleri zamanında ve e
 
 Sprint 3 sonunda proje, demo sunumu yapılabilecek olgunluğa erişmiştir. Yapılan geliştirmeler, ürünün gerçek kullanıcı testlerine açılması ve sunuma hazır hale gelmesini sağlamıştır.
 
+Aşağıdaki grafik, 20.07.2025–03.08.2025 tarihleri arasında ekip tarafından kazanılan toplam puanların zaman içindeki dağılımını göstermektedir.
+
+<img width="747" height="462" alt="image" src="https://github.com/user-attachments/assets/fd692bac-55b8-4a1e-9f67-9b638fecd1e3" />
+
+Grafikte de görüldüğü üzere, Sprint 3 sürecinde ekip istikrarlı ve kararlı bir performans sergileyerek önemli bir ilerleme kaydetmiştir. AI entegrasyonlarının yanı sıra kullanıcı panellerinin tamamlanmasıyla birlikte teknik ve fonksiyonel hedefler başarıyla gerçekleştirilmiştir. Bu süreçte toplamda 250 puanlık iş yükü tamamlanmış ve ürün demo sunumu yapılabilecek seviyeye getirilmiştir.
 
 ## Sprint Retrospective
 
