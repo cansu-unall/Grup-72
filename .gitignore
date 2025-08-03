@@ -20,3 +20,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+backend/venv_py310/
+.venv/
+venv/
+env/
