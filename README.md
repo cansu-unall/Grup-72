@@ -296,38 +296,21 @@ https://bit.ly/Grup-72
 ## Ürün Durumu Ekran Görüntüleri
 Sprint 3 kapsamında geliştirilen işlevsellikler, arayüz ekranları ve AI destekli özellikler aşağıdaki gibi tamamlanmıştır. Ekip, öğrenci–öğretmen–veli panelleri başta olmak üzere tüm roller için temel deneyimleri aktif hale getirmiştir. Özellikle öğrenci skor analizi, AI ile içerik üretimi ve yardım botu gibi özellikler bu sprintte başarıyla entegre edilmiştir.
 
-- Öğrenci Paneli – Aktivite Detayı ve Quiz Çözümü
-Öğrencinin, kendisine atanan aktivite içeriğini görerek quiz sorularını yanıtladığı arayüz.
+- [Öğretmen Paneli - Giriş Ekranı](docs/Öğretmen_Paneli_Giriş_Ekranı.png.jpg) : Öğretmenin öğrenci ve sınıf yönetimi için paneline giriş yaptığı ekran.
 
--Quiz Sonuçları ve Geri Bildirim
-Öğrenci tamamladığı quiz sonrası doğru cevap sayısını ve sistemden gelen geri bildirimi görebilir.
+- [AI ile Metin Üretimi ve Aktivite Formu](docs/Al_iIe_Metin_Üretimi_ve_Aktivite_Formu.png.jpg) : Öğretmenin öğrenciye özel metin üretip sadeleştirerek quiz hazırlayabildiği arayüz.
 
-- Öğrenci Gelişim Raporu
-Öğrencinin genel başarı durumu, en son katıldığı aktiviteler ve başarı yüzdesi grafiksel olarak sunulmuştur.
+- [Aktivite Arama ve Düzenleme Ekranı](docs/Aktivite_Arama_ve_Düzenleme_Ekranı.png.jpg) : Oluşturulmuş aktivitelerin filtrelenip düzenlenebildiği ekran.
 
-- AI Destekli Yardım Botu
-Gemini 2.5 Flash modeli ile çalışan yardım botu, öğrencilerin anlamadığı kavramlara anlık destek verir.
+- [Öğretmen Paneli – Sınıf Durumu](docs/Öğretmen_Paneli_Sınıf_Durumu.png.jpg) : Öğretmenin öğrencilerin genel performansını ve son aktivite tarihini görebildiği ekran.
 
--Öğretmen Paneli – AI ile Quiz Soru Üretimi
-Öğretmenler, metne dayalı olarak AI destekli çoktan seçmeli quiz soruları üretebilir.
+- [Öğrenci Paneli – Aktivite Görüntüleme](docs/Öğrenci_Paneli_Aktivite_Görüntüleme.png.jpg) : Öğrencinin atanan okuma metnini görüp aktiviteye başlayabildiği ekran.
 
-- AI Destekli Metin Sadeleştirme
-Zor metinler öğretmen tarafından Gemini modeli aracılığıyla sadeleştirilir.
+- [Öğrenci Paneli – Ana Sayfa](docs/Öğrenci_Paneli_Ana_Sayfa.png.jpg) : Öğrencinin gelişim raporu, zor kelimeler ve yardım botuna ulaşabildiği başlangıç ekranı.
 
-- Zor Kelime Yönetimi – Öğrenci Paneli
-Öğrenciler zorlandıkları kelimeleri işaretleyip daha sonra tekrar edebilir.
+- [Öğrenci Paneli – AI Destekli Yardım Botu](docs/AI_Destekli_Yardım_Botu.png.jpg) : Öğrencinin anlamadığı kelimeleri sorduğu AI yardım arayüzü.
 
-- Öğretmen Paneli – Öğrenci Raporu
-Öğretmenler tüm öğrencilerinin skor durumlarını, katıldığı aktiviteleri ve gelişim özetini tek panelde görür.
-
-- Veli Paneli – Çocuk Gelişim Özeti
-Veliler, çocuklarının aktivite geçmişini, başarı düzeylerini ve zorlandıkları alanları görsel olarak takip eder.
-
-- Aktivite Oluşturma Arayüzü
-Öğretmenler öğrenciye özel içerik oluşturabilir, zorluk seviyesini belirleyerek aktivite tanımlar.
-
-- Aktivite Arama ve Detay
-Öğretmen, oluşturduğu aktiviteleri filtreleyerek düzenleyebilir veya yeni içerikler hazırlayabilir.
+- [Veli Paneli – Gelişim Takibi](docs/Veli_Paneli_Gelişim_Takibi.png.jpg) : Velinin çocuğunun gelişimini ve geçmiş aktivitelerini görüntülediği panel ekranı.
 
 Tüm bu geliştirmeler, Sprint 3 hedeflerinin başarıyla yerine getirildiğini ve ürünün son kullanıcıya sunulmaya hazır hale geldiğini göstermektedir.
 
