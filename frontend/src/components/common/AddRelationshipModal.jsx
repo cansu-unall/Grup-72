@@ -54,10 +54,7 @@ const AddRelationshipModal = ({ title, inputLabel, relationshipType, onClose, on
                     return;
                 }
                 // Backend'e öğretmenin ID'sini ve öğrencinin e-postasını gönder
-                await api.post(`/api/kullanicilar/iliskiler/ogretmen-ogrenci-email`, {
-                    teacher_id: user.id,
-                    student_email: searchTerm
-                });
+                await api.post(`/api/kullanicilar/iliskiler/ogrenci-email-ile-ekle?student_email=${searchTerm}`);
                 toast.success('Öğrenci başarıyla eklendi!');
 
             } else {

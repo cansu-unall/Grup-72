@@ -166,6 +166,7 @@ class ActivityCreate(ActivityBase):
 
 # Activity update schema
 class ActivityUpdate(BaseModel):
+    activity_type: Optional[str] = None
     title: Optional[str] = None
     description: Optional[str] = None
     content: Optional[str] = None
@@ -173,6 +174,44 @@ class ActivityUpdate(BaseModel):
     completed: Optional[bool] = None
     score: Optional[int] = Field(None, ge=0, le=100)
     feedback: Optional[str] = None
+    questions: Optional[str] = None  # JSON string
+    correct_answers: Optional[str] = None  # JSON string
+
+    @field_validator("questions", mode="before")
+    @classmethod
+    def parse_questions_for_update(cls, v):
+        import json
+        if v is None:
+            return None
+        if isinstance(v, str):
+            return v  # Already a JSON string
+        elif isinstance(v, list):
+            # If it's a list of objects, extract question_text and convert to JSON
+            if len(v) > 0 and isinstance(v[0], dict) and 'question_text' in v[0]:
+                questions_only = [item.get('question_text', '') for item in v]
+                return json.dumps(questions_only, ensure_ascii=False)
+            else:
+                # If it's already a list of strings
+                return json.dumps(v, ensure_ascii=False)
+        return json.dumps(v, ensure_ascii=False)
+
+    @field_validator("correct_answers", mode="before")  
+    @classmethod
+    def parse_correct_answers_for_update(cls, v):
+        import json
+        if v is None:
+            return None
+        if isinstance(v, str):
+            return v  # Already a JSON string
+        elif isinstance(v, list):
+            # If it's a list of objects, extract correct_answer and convert to JSON
+            if len(v) > 0 and isinstance(v[0], dict) and 'correct_answer' in v[0]:
+                answers_only = [item.get('correct_answer', '') for item in v]
+                return json.dumps(answers_only, ensure_ascii=False)
+            else:
+                # If it's already a list of strings
+                return json.dumps(v, ensure_ascii=False)
+        return json.dumps(v, ensure_ascii=False)
 
 # Activity read schema
 class ActivityRead(ActivityBase):
@@ -183,7 +222,7 @@ class ActivityRead(ActivityBase):
     feedback: Optional[str] = None
     created_at: datetime
     completed_at: Optional[datetime] = None
-    questions: Optional[List[str]] = None
+    questions: Optional[List[Dict]] = None  # Changed to Dict to support objects
     student_answers: Optional[List[str]] = None
     correct_answers: Optional[List[str]] = None
 
@@ -191,11 +230,30 @@ class ActivityRead(ActivityBase):
     @classmethod
     def parse_questions(cls, v):
         import json
+        if v is None:
+            return None
         if isinstance(v, str):
             try:
-                return json.loads(v)
+                parsed = json.loads(v)
+                # Convert to list of dicts with question_text and correct_answer
+                if isinstance(parsed, list) and len(parsed) > 0:
+                    if isinstance(parsed[0], str):
+                        # If it's just strings, convert to question objects
+                        return [{"question_text": q, "correct_answer": ""} for q in parsed]
+                    elif isinstance(parsed[0], dict):
+                        # If it's already objects, return as is
+                        return parsed
+                return parsed
             except Exception:
                 return None
+        elif isinstance(v, list):
+            # If it's already a list of objects, return as is
+            if len(v) > 0 and isinstance(v[0], dict):
+                return v
+            # If it's strings, convert to objects
+            elif len(v) > 0 and isinstance(v[0], str):
+                return [{"question_text": q, "correct_answer": ""} for q in v]
+            return v
         return v
 
     @field_validator("student_answers", mode="before")
@@ -213,11 +271,27 @@ class ActivityRead(ActivityBase):
     @classmethod
     def parse_correct_answers(cls, v):
         import json
+        if v is None:
+            return None
         if isinstance(v, str):
             try:
-                return json.loads(v)
+                parsed = json.loads(v)
+                # If it's a list of objects with correct_answer, extract just the answer
+                if isinstance(parsed, list) and len(parsed) > 0 and isinstance(parsed[0], dict):
+                    if 'correct_answer' in parsed[0]:
+                        return [item.get('correct_answer', '') for item in parsed]
+                # If it's already a list of strings, return as is
+                if isinstance(parsed, list):
+                    return parsed
+                return parsed
             except Exception:
                 return None
+        elif isinstance(v, list):
+            # If it's already a list of objects, extract the correct_answer
+            if len(v) > 0 and isinstance(v[0], dict) and 'correct_answer' in v[0]:
+                return [item.get('correct_answer', '') for item in v]
+            # If it's already a list of strings, return as is
+            return v
         return v
 
     class Config:

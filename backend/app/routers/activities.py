@@ -4,6 +4,7 @@ from ..services.activity import answer_quiz_activity_by_student
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
+import json
 
 from ..services import (
     create_activity, get_activity, get_student_activities, update_activity, delete_activity,
@@ -164,14 +165,38 @@ def read_student_activities(
                 "created_at": activity.created_at,
                 "completed_at": activity.completed_at,
                 "questions": None,
-                "correct_answers": None
+                "correct_answers": None  # Doğru cevapları her zaman gizle
             }
             
-            # Questions varsa parse et
+            # Soruları göster ama doğru cevapları gizle (activity_type'dan bağımsız olarak)
             if activity.questions:
                 try:
-                    import json
-                    activity_dict["questions"] = json.loads(activity.questions)
+                    questions_data = json.loads(activity.questions)
+                    # Eğer sorular obje formatındaysa, doğru cevapları gizle
+                    if isinstance(questions_data, list) and len(questions_data) > 0:
+                        if isinstance(questions_data[0], dict) and 'correct_answer' in questions_data[0]:
+                            # Yeni format - doğru cevapları gizle
+                            safe_questions = []
+                            for q in questions_data:
+                                safe_q = q.copy()
+                                safe_q['correct_answer'] = ""  # Doğru cevabı gizle
+                                safe_questions.append(safe_q)
+                            activity_dict["questions"] = safe_questions
+                        elif isinstance(questions_data[0], dict) and 'dogru_cevap' in questions_data[0]:
+                            # Eski format - doğru cevapları gizle ve soru alanını question_text'e çevir
+                            safe_questions = []
+                            for q in questions_data:
+                                safe_q = {
+                                    "question_text": q.get("soru", ""),
+                                    "correct_answer": ""  # Doğru cevabı gizle
+                                }
+                                safe_questions.append(safe_q)
+                            activity_dict["questions"] = safe_questions
+                        else:
+                            # Eski format - sadece soru metinleri
+                            activity_dict["questions"] = questions_data
+                    else:
+                        activity_dict["questions"] = questions_data
                 except Exception:
                     activity_dict["questions"] = None
             

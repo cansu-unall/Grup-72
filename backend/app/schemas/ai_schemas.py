@@ -8,8 +8,8 @@ class TextSimplifyRequest(BaseModel):
 
 # Anlama sorusu ve cevabı için yanıt modeli
 class AnlamaSoru(BaseModel):
-    soru: str
-    dogru_cevap: str
+    question_text: str
+    correct_answer: str
 
 class AnlamaSorusuResponse(BaseModel):
     sorular: list[AnlamaSoru]

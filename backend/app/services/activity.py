@@ -304,8 +304,26 @@ def get_teacher_class_report(db: Session, teacher_id: int):
 def calculate_quiz_score(activity):
     try:
         student_answers = json.loads(activity.student_answers) if activity.student_answers else []
-        correct_answers_raw = json.loads(activity.correct_answers) if activity.correct_answers else []
-        correct_answers = [item["dogru_cevap"] for item in correct_answers_raw if "dogru_cevap" in item]
+        
+        # Önce questions field'ından doğru cevapları al
+        correct_answers = []
+        if activity.questions:
+            questions_data = json.loads(activity.questions)
+            if isinstance(questions_data, list) and len(questions_data) > 0:
+                if isinstance(questions_data[0], dict) and 'correct_answer' in questions_data[0]:
+                    correct_answers = [q.get('correct_answer', '') for q in questions_data]
+                elif isinstance(questions_data[0], dict) and 'dogru_cevap' in questions_data[0]:
+                    correct_answers = [q.get('dogru_cevap', '') for q in questions_data]
+        
+        # Eğer questions'dan alınamadıysa correct_answers field'ından al
+        if not correct_answers and activity.correct_answers:
+            correct_answers_raw = json.loads(activity.correct_answers)
+            if isinstance(correct_answers_raw, list) and len(correct_answers_raw) > 0:
+                if isinstance(correct_answers_raw[0], dict) and "dogru_cevap" in correct_answers_raw[0]:
+                    correct_answers = [item["dogru_cevap"] for item in correct_answers_raw]
+                else:
+                    correct_answers = correct_answers_raw
+        
     except Exception:
         return 0
 
@@ -337,14 +355,41 @@ def answer_quiz_activity_by_student(db: Session, activity_id: int, answer_data: 
     if activity.completed:
         raise HTTPException(status_code=400, detail="Bu aktivite zaten tamamlanmış.")
     
-    # Doğru cevapları al
-    if not activity.correct_answers:
-        raise HTTPException(status_code=400, detail="Bu quiz için doğru cevaplar tanımlanmamış.")
+    # Doğru cevapları al - önce questions alanından, yoksa correct_answers alanından
+    correct_answers = []
     
-    try:
-        correct_answers = json.loads(activity.correct_answers)
-    except:
-        raise HTTPException(status_code=500, detail="Doğru cevaplar parse edilemedi.")
+    if activity.questions:
+        try:
+            questions_data = json.loads(activity.questions)
+            # Eğer questions obje formatındaysa, correct_answer'ları çıkar
+            if isinstance(questions_data, list) and len(questions_data) > 0:
+                if isinstance(questions_data[0], dict) and 'correct_answer' in questions_data[0]:
+                    correct_answers = [q.get('correct_answer', '') for q in questions_data]
+                elif isinstance(questions_data[0], dict) and 'dogru_cevap' in questions_data[0]:
+                    correct_answers = [q.get('dogru_cevap', '') for q in questions_data]
+                else:
+                    # Eski format - correct_answers alanından al
+                    if activity.correct_answers:
+                        correct_answers = json.loads(activity.correct_answers)
+            else:
+                # Eski format - correct_answers alanından al
+                if activity.correct_answers:
+                    correct_answers = json.loads(activity.correct_answers)
+        except:
+            # questions parse edilemezse correct_answers alanından al
+            if activity.correct_answers:
+                try:
+                    correct_answers = json.loads(activity.correct_answers)
+                except:
+                    pass
+    elif activity.correct_answers:
+        try:
+            correct_answers = json.loads(activity.correct_answers)
+        except:
+            pass
+    
+    if not correct_answers:
+        raise HTTPException(status_code=400, detail="Bu quiz için doğru cevaplar tanımlanmamış.")
     
     # Skor hesapla
     student_answers = answer_data.cevaplar
@@ -354,14 +399,24 @@ def answer_quiz_activity_by_student(db: Session, activity_id: int, answer_data: 
     correct_count = 0
     for i, (student_answer, correct_answer) in enumerate(zip(student_answers, correct_answers)):
         # Fuzzy matching kullanarak benzer cevapları da doğru kabul et
-        # Disleksi öğrencileri için daha esnek yaklaşım: %70 ve üzeri benzerlik oranını doğru kabul ediyoruz
-        # partial_ratio kullanarak kısmi eşleşmeleri de değerlendiriyoruz
-        similarity_ratio = max(
-            fuzz.ratio(student_answer.strip().lower(), correct_answer.strip().lower()),
-            fuzz.partial_ratio(student_answer.strip().lower(), correct_answer.strip().lower())
-        )
-        if similarity_ratio >= 70:
-            correct_count += 1
+        # Disleksi öğrencileri için daha esnek yaklaşım ancak çok kısa cevaplar için daha sıkı kontrol
+        student_clean = student_answer.strip().lower()
+        correct_clean = correct_answer.strip().lower()
+        
+        # Eğer öğrenci cevabı çok kısa (3 karakter veya daha az) ve doğru cevap uzunsa, sıkı kontrol
+        if len(student_clean) <= 3 and len(correct_clean) > 3:
+            # Kısa cevaplar için tam eşleşme veya çok yüksek benzerlik (95%+) gerekli
+            similarity_ratio = fuzz.ratio(student_clean, correct_clean)
+            if similarity_ratio >= 95:
+                correct_count += 1
+        else:
+            # Normal cevaplar için daha esnek yaklaşım: %80 ve üzeri benzerlik oranını doğru kabul et
+            similarity_ratio = max(
+                fuzz.ratio(student_clean, correct_clean),
+                fuzz.partial_ratio(student_clean, correct_clean)
+            )
+            if similarity_ratio >= 80:
+                correct_count += 1
     
     score = int((correct_count / len(correct_answers)) * 100)
     

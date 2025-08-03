@@ -90,7 +90,7 @@ def generate_comprehension_questions_with_gemini(db: Session, activity_id: int) 
         raise Exception("Aktivite bulunamadı.")
 
     prompt = f"""
-    Aşağıdaki okuma metnine göre, disleksi çocukları için anlamaya yönelik 5 kısa soru üret. Her soru için doğru cevabı da ver. Format: [{{soru, dogru_cevap}}]
+    Aşağıdaki okuma metnine göre, disleksi çocukları için anlamaya yönelik 5 kısa soru üret. Her soru için doğru cevabı da ver. Format: [{{"question_text": "soru metni", "correct_answer": "doğru cevap"}}]
     Metin: {activity.content}
     Sadece JSON formatında yanıt ver.
     """
@@ -107,11 +107,11 @@ def generate_comprehension_questions_with_gemini(db: Session, activity_id: int) 
         if start != -1 and end != -1:
             text = text[start:end+1]
         sorular = json.loads(text)
-        # Soruları ve doğru cevapları ayrı ayrı kaydet
-        questions_only = [item["soru"] for item in sorular if "soru" in item]
-        correct_answers_only = [item["dogru_cevap"] for item in sorular if "dogru_cevap" in item]
         
-        activity.questions = json.dumps(questions_only, ensure_ascii=False)
+        # Yeni format: Soruların tamamını obje olarak kaydet
+        activity.questions = json.dumps(sorular, ensure_ascii=False)
+        # Doğru cevapları ayrı olarak da kaydet (backward compatibility için)
+        correct_answers_only = [item.get("correct_answer", "") for item in sorular if "correct_answer" in item]
         activity.correct_answers = json.dumps(correct_answers_only, ensure_ascii=False)
         db.commit()
         return sorular

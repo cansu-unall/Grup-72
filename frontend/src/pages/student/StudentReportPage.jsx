@@ -35,7 +35,7 @@ const StudentReportPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 <div className="bg-white p-4 rounded-lg shadow text-center">
                     <h3 className="text-lg text-gray-500">Başarı Oranı</h3>
-                    <p className="text-4xl font-bold text-primary">{reportData.basari_orani}%</p>
+                    <p className="text-4xl font-bold text-primary">{reportData.basari_orani?.toFixed(2) || 0}%</p>
                     <p className="text-sm text-gray-500">({reportData.tamamlanan_aktivite}/{reportData.toplam_aktivite} aktivite)</p>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow text-center">
@@ -54,7 +54,7 @@ const StudentReportPage = () => {
                     <ul className="mt-4 space-y-2">
                         {reportData.zorlandigi_aktiviteler?.length > 0 ? reportData.zorlandigi_aktiviteler.map((activity, index) => (
                             <li key={index} className="p-3 bg-orange-100 text-orange-800 rounded-lg">
-                                {activity}
+                                {activity.title || 'Aktivite'} - Skor: {activity.score}
                             </li>
                         )) : <p>Destek gereken bir aktivite bulunmuyor.</p>}
                     </ul>

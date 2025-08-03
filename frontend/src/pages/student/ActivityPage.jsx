@@ -73,7 +73,10 @@ const ActivityPage = () => {
                     setIsCompleting(false);
                     return;
                 }
-                response = await api.post(`/api/aktiviteler/ogrenci/${activityId}/cevapla`, { cevaplar: cevaplarArray });
+                response = await api.post(`/api/aktiviteler/ogrenci/${activityId}/cevapla`, { 
+                    student_id: user.id,
+                    cevaplar: cevaplarArray 
+                });
             } else {
                 response = await api.put(`/api/aktiviteler/${activityId}`, { completed: true });
             }
