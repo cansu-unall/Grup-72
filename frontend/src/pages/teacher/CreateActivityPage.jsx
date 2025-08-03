@@ -7,7 +7,6 @@ import Spinner from '../../components/common/Spinner';
 const CreateActivityPage = () => {
     const { user } = useAuth();
     
-    // State basitleştirildi, manuel quiz alanları kaldırıldı
     const initialActivityState = {
         title: '',
         description: '',
@@ -24,12 +23,14 @@ const CreateActivityPage = () => {
     const [selectedStudentName, setSelectedStudentName] = useState('');
 
     const [generatedText, setGeneratedText] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSimplifying, setIsSimplifying] = useState(false);
+    
+    // --- GÜNCELLENDİ: İki ayrı yükleme durumu ---
+    const [isCreatingReading, setIsCreatingReading] = useState(false);
     const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
 
-    // Öğrenci arama fonksiyonu (Değişiklik yok)
+    // Öğrenci arama fonksiyonu
     useEffect(() => {
         if (studentSearch.length > 2) {
             const delayDebounceFn = setTimeout(async () => {
@@ -60,7 +61,7 @@ const CreateActivityPage = () => {
         setActivity(prev => ({ ...prev, [name]: processedValue }));
     };
 
-    // Metin üretme ve sadeleştirme fonksiyonları (Değişiklik yok)
+    // Metin üretme ve sadeleştirme fonksiyonları
     const handleGenerateText = async () => {
         if (!aiCategory) {
             toast.error("Lütfen bir kategori girin.");
@@ -95,8 +96,39 @@ const CreateActivityPage = () => {
         }
     };
 
-    // --- YENİ: "Oluştur ve Quiz Üret" fonksiyonu ---
-    const handleCreateAndGenerateQuiz = async () => {
+    // --- YENİ: Sadece Okuma Aktivitesi Oluşturma Fonksiyonu ---
+    const handleCreateReadingActivity = async () => {
+        if (!activity.student_id || !activity.title || !activity.content) {
+            toast.error("Lütfen Öğrenci, Başlık ve İçerik alanlarını doldurun.");
+            return;
+        }
+        setIsCreatingReading(true);
+        try {
+            const payload = {
+                ...activity,
+                teacher_id: user.id, // Öğretmen ID'si eklendi
+                activity_type: 'okuma',
+            };
+            await api.post('/api/aktiviteler/', payload);
+            toast.success('Okuma aktivitesi başarıyla oluşturuldu!');
+            
+            // Formu temizle
+            setActivity(initialActivityState);
+            setGeneratedText('');
+            setSelectedStudentName('');
+        } catch (error) {
+            const errorMessage = error.response?.data?.detail?.[0]?.msg || 'Aktivite oluşturulurken bir hata oluştu.';
+            toast.error(errorMessage);
+        } finally {
+            setIsCreatingReading(false);
+        }
+    };
+
+    // --- Quiz Oluşturma Fonksiyonu (İsmi daha açıklayıcı hale getirildi) ---
+    const handleCreateQuizActivity = async () => {
+        // --- HATA AYIKLAMA: Butona tıklandığı andaki aktivite durumunu kontrol et ---
+        console.log("Quiz oluşturma butonu tıklandı. Mevcut aktivite durumu:", activity);
+
         if (!activity.student_id || !activity.title || !activity.content) {
             toast.error("Lütfen Öğrenci, Başlık ve İçerik alanlarını doldurun.");
             return;
@@ -108,32 +140,25 @@ const CreateActivityPage = () => {
          try {
             // 1. Adım: Geçici bir "okuma" aktivitesi oluştur
             toast.loading('Aktivite oluşturuluyor...');
-            // --- GÜNCELLENDİ: 'questions' alanı payload'dan kaldırıldı ---
             const readingPayload = {
-                title: activity.title,
-                description: activity.description,
-                difficulty_level: Number(activity.difficulty_level),
-                student_id: Number(activity.student_id),
-                content: activity.content,
+                ...activity,
+                teacher_id: user.id,
                 activity_type: 'okuma',
-                // questions: '[]' // Bu satır kaldırıldı
             };
             const createResponse = await api.post('/api/aktiviteler/', readingPayload);
             newActivityId = createResponse.data.id;
             
-            if (!newActivityId) {
-                throw new Error("Aktivite oluşturuldu ancak ID alınamadı.");
-            }
+            if (!newActivityId) throw new Error("Aktivite oluşturuldu ancak ID alınamadı.");
 
             // 2. Adım: Oluşturulan aktivitenin ID'si ile soruları üret
             toast.dismiss();
             toast.loading('Yapay zeka soruları üretiyor...');
             const quizResponse = await api.post(`/api/ai/anlama-sorusu-uret/${newActivityId}`);
             
-            // API'den gelen veriyi frontend'in beklediği formata çevir
+            console.log("YAPAY ZEKA YANITI:", quizResponse.data);
+
             const generatedQuestions = quizResponse.data.sorular.map(item => ({
                 question_text: item.soru,
-                options: [item.dogru_cevap, "Seçenek B", "Seçenek C"], // API sadece doğru cevabı veriyorsa, seçenekleri doldurmamız gerekir.
                 correct_answer: item.dogru_cevap
             }));
 
@@ -144,29 +169,33 @@ const CreateActivityPage = () => {
             // 3. Adım: Aktiviteyi "quiz" olarak güncelle
             toast.dismiss();
             toast.loading('Quiz aktiviteye dönüştürülüyor...');
-            // --- GÜNCELLENDİ: Güncelleme payload'ı da açıkça oluşturuldu ---
+            
             const quizPayload = {
                 title: activity.title,
                 description: activity.description,
-                difficulty_level: Number(activity.difficulty_level),
-                student_id: Number(activity.student_id),
                 content: activity.content,
+                difficulty_level: activity.difficulty_level,
+                student_id: activity.student_id,
+                teacher_id: user.id,
                 activity_type: 'quiz',
                 questions: JSON.stringify(generatedQuestions)
             };
+
+            console.log("AKTİVİTE GÜNCELLEME PAYLOAD'I:", quizPayload);
+
             await api.put(`/api/aktiviteler/${newActivityId}`, quizPayload);
 
             toast.dismiss();
             toast.success('Quiz başarıyla üretildi ve öğrenciye atandı!');
             
-            // Formu temizle
             setActivity(initialActivityState);
             setGeneratedText('');
             setSelectedStudentName('');
 
         } catch (error) {
             toast.dismiss();
-            toast.error(error.response?.data?.detail || 'İşlem sırasında bir hata oluştu.');
+            const errorMessage = error.response?.data?.detail?.[0]?.msg || error.response?.data?.detail || 'İşlem sırasında bir hata oluştu.';
+            toast.error(errorMessage);
             console.error("Quiz oluşturma zincirinde hata:", error);
         } finally {
             setIsGeneratingQuiz(false);
@@ -266,15 +295,23 @@ const CreateActivityPage = () => {
                             <textarea id="content" name="content" value={activity.content} onChange={handleInputChange} className="w-full border p-2 rounded-lg h-48" required></textarea>
                         </div>
 
-                        {/* --- GÜNCELLENDİ: Tek Buton Alanı --- */}
-                        <div className="border-t pt-4">
+                        {/* --- GÜNCELLENDİ: İki Ayrı Buton Alanı --- */}
+                        <div className="border-t pt-4 flex flex-col sm:flex-row gap-4">
                             <button 
                                 type="button" 
-                                onClick={handleCreateAndGenerateQuiz}
-                                disabled={isSubmitting || isGeneratingQuiz} 
+                                onClick={handleCreateReadingActivity}
+                                disabled={isCreatingReading || isGeneratingQuiz} 
+                                className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 font-semibold"
+                            >
+                                {isCreatingReading ? <Spinner size="sm" /> : 'Okuma Aktivitesi Oluştur'}
+                            </button>
+                            <button 
+                                type="button" 
+                                onClick={handleCreateQuizActivity}
+                                disabled={isCreatingReading || isGeneratingQuiz} 
                                 className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 disabled:bg-gray-400 font-semibold"
                             >
-                                {isGeneratingQuiz ? <Spinner size="sm" /> : 'Oluştur ve Quiz Üret'}
+                                {isGeneratingQuiz ? <Spinner size="sm" /> : 'Quiz Aktivitesi Oluştur'}
                             </button>
                         </div>
                     </form>
