@@ -14,7 +14,6 @@ const ActivityPage = () => {
     const [loading, setLoading] = useState(true);
     const [isCompleting, setIsCompleting] = useState(false);
     const [answers, setAnswers] = useState({});
-    const [feedback, setFeedback] = useState('');
 
     useEffect(() => {
         const fetchActivity = async () => {
@@ -23,30 +22,23 @@ const ActivityPage = () => {
                 const response = await api.get(`/api/aktiviteler/${activityId}`);
                 const fetchedActivity = response.data;
                 
-                // Gelen verideki 'questions' bir JSON string ise onu parse et
+                console.log("BACKEND'DEN GELEN AKTİVİTE VERİSİ:", fetchedActivity);
+
                 if (typeof fetchedActivity.questions === 'string') {
-                    try {
-                        fetchedActivity.questions = JSON.parse(fetchedActivity.questions);
-                    } catch (e) {
-                        console.error("Soru formatı bozuk:", e);
-                        fetchedActivity.questions = [];
-                    }
+                    fetchedActivity.questions = JSON.parse(fetchedActivity.questions);
                 }
 
                 setActivity(fetchedActivity);
 
-                // Quiz ise ve tamamlanmadıysa, cevap state'ini hazırla
                 if (fetchedActivity?.activity_type === 'quiz' && !fetchedActivity.completed) {
                     const initialAnswers = {};
                     (fetchedActivity.questions || []).forEach((q, index) => {
-                        // Her soru için cevap state'ini başlat
                         initialAnswers[index] = '';
                     });
                     setAnswers(initialAnswers);
                 }
             } catch (err) {
                 toast.error("Aktivite yüklenirken bir hata oluştu.");
-                setActivity(null);
             } finally {
                 setLoading(false);
             }
@@ -59,13 +51,9 @@ const ActivityPage = () => {
         if (!cleanedWord || activity.completed) return;
         
         try {
-            await api.post('/kelimeler/zor', {
-                student_id: user.id,
-                kelime: cleanedWord
-            });
+            await api.post('/kelimeler/zor', { student_id: user.id, kelime: cleanedWord });
             toast.success(`'${cleanedWord}' kelimesi zor olarak işaretlendi.`);
         } catch (error) {
-            console.error("Kelime işaretleme hatası:", error);
             toast.error(error.response?.data?.detail || "Kelime işaretlenemedi.");
         }
     };
@@ -74,58 +62,33 @@ const ActivityPage = () => {
         setAnswers(prev => ({ ...prev, [questionIndex]: answer }));
     };
 
-    // --- GÜNCELLENDİ: Aktivite tamamlama fonksiyonu ---
     const handleCompleteActivity = async () => {
         setIsCompleting(true);
-        
         try {
             let response;
             if (activity.activity_type === 'quiz') {
-                // Quiz tamamlama mantığı
                 const cevaplarArray = Object.values(answers);
-                if (cevaplarArray.length !== activity.questions.length || cevaplarArray.some(ans => ans === '')) {
+                if (cevaplarArray.length !== activity.questions.length || cevaplarArray.some(ans => ans.trim() === '')) {
                     toast.error("Lütfen tüm soruları cevaplayın.");
                     setIsCompleting(false);
                     return;
                 }
-                const payload = { cevaplar: cevaplarArray };
-                
-                // Backend'deki doğru endpoint'i çağır
-                response = await api.post(`/api/aktiviteler/ogrenci/${activityId}/cevapla`, payload);
-                
+                response = await api.post(`/api/aktiviteler/ogrenci/${activityId}/cevapla`, { cevaplar: cevaplarArray });
             } else {
-                // Okuma aktivitesi tamamlama mantığı
-                const payload = { 
-                    completed: true,
-                };
-                // Backend'deki PUT endpoint'ini kullan
-                response = await api.put(`/api/aktiviteler/${activityId}`, payload);
+                response = await api.put(`/api/aktiviteler/${activityId}`, { completed: true });
             }
 
-            // API'den dönen güncel aktivite verisiyle state'i tamamen yenile
             setActivity(response.data);
-
-            if (response.data.score !== null && response.data.score !== undefined) {
-                toast.success(`Aktivite tamamlandı! Skorunuz: ${response.data.score}`, { duration: 4000 });
-            } else {
-                toast.success(`Aktivite başarıyla tamamlandı!`);
-            }
-
+            toast.success(response.data.score !== null ? `Aktivite tamamlandı! Skorunuz: ${response.data.score}` : `Aktivite başarıyla tamamlandı!`);
         } catch (err) {
-            console.error("Aktivite tamamlama hatası:", err);
             toast.error(err.response?.data?.detail || "Aktivite tamamlanırken bir hata oluştu.");
         } finally {
             setIsCompleting(false);
         }
     };
 
-    if (loading) {
-        return <div className="flex justify-center items-center h-screen"><Spinner /></div>;
-    }
-
-    if (!activity) {
-        return <div className="text-center mt-10 text-xl text-red-500">Aktivite bulunamadı veya yüklenemedi.</div>;
-    }
+    if (loading) return <div className="flex justify-center items-center h-screen"><Spinner /></div>;
+    if (!activity) return <div className="text-center mt-10 text-xl text-red-500">Aktivite bulunamadı.</div>;
 
     const isQuiz = activity.activity_type === 'quiz';
     const hasQuestions = Array.isArray(activity.questions) && activity.questions.length > 0;
@@ -145,43 +108,23 @@ const ActivityPage = () => {
                             activity.questions.map((questionData, qIndex) => (
                                 <div key={qIndex} className="mb-6 pb-4 border-b last:border-b-0">
                                     <p className="font-semibold text-lg mb-3">{qIndex + 1}. {questionData.question_text}</p>
-                                    <div className="space-y-2">
-                                        {questionData.options.map((option, oIndex) => {
-                                            const isChecked = activity.completed 
-                                                ? (activity.student_answers && activity.student_answers[qIndex] === option)
-                                                : answers[qIndex] === option;
-                                            
-                                            const isCorrect = activity.completed && (activity.correct_answers && activity.correct_answers[qIndex] === option);
-
-                                            let labelClass = "flex items-center p-3 rounded-lg transition-colors border ";
-                                            if (activity.completed) {
-                                                if (isCorrect) {
-                                                    labelClass += "bg-green-100 border-green-400 font-bold";
-                                                } else if (isChecked) {
-                                                    labelClass += "bg-red-100 border-red-400 line-through";
-                                                } else {
-                                                    labelClass += "bg-gray-50 border-gray-200";
-                                                }
-                                            } else {
-                                                labelClass += "hover:bg-indigo-50 cursor-pointer border-gray-300";
-                                            }
-
-                                            return (
-                                                <label key={oIndex} className={labelClass}>
-                                                    <input 
-                                                        type="radio"
-                                                        name={`question-${qIndex}`}
-                                                        value={option}
-                                                        checked={isChecked}
-                                                        onChange={() => handleQuizAnswerChange(qIndex, option)}
-                                                        className="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300"
-                                                        disabled={activity.completed || isCompleting}
-                                                    />
-                                                    <span className="ml-3 text-gray-700">{option}</span>
-                                                </label>
-                                            );
-                                        })}
-                                    </div>
+                                    {activity.completed ? (
+                                        <div className="space-y-2">
+                                            <p className="p-3 bg-gray-100 rounded-lg">Sizin Cevabınız: <span className="font-medium">{activity.student_answers[qIndex]}</span></p>
+                                            <p className={`p-3 rounded-lg ${activity.student_answers[qIndex] === questionData.correct_answer ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                                Doğru Cevap: <span className="font-medium">{questionData.correct_answer}</span>
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <input 
+                                            type="text"
+                                            value={answers[qIndex] || ''}
+                                            onChange={(e) => handleQuizAnswerChange(qIndex, e.target.value)}
+                                            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition"
+                                            placeholder="Cevabınızı buraya yazın..."
+                                            disabled={isCompleting}
+                                        />
+                                    )}
                                 </div>
                             ))
                         ) : (
@@ -201,41 +144,14 @@ const ActivityPage = () => {
 
                 <div className="mt-8 pt-6 border-t">
                     {!activity.completed ? (
-                        <>
-                            {(isQuiz && hasQuestions) || !isQuiz ? (
-                                <>
-                                    {!isQuiz && (
-                                        <>
-                                            <h3 className="text-xl font-semibold mb-3">Geri Bildirim (İsteğe Bağlı)</h3>
-                                            <textarea
-                                                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 transition"
-                                                rows="3"
-                                                placeholder="Aktivite hakkındaki düşünceleriniz..."
-                                                value={feedback}
-                                                onChange={(e) => setFeedback(e.target.value)}
-                                            />
-                                        </>
-                                    )}
-                                    <button
-                                        onClick={handleCompleteActivity}
-                                        disabled={isCompleting}
-                                        className="mt-4 w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 disabled:bg-gray-400 font-bold text-lg transition-transform transform hover:scale-105"
-                                    >
-                                        {isCompleting ? <Spinner size="sm" /> : 'Aktiviteyi Bitir'}
-                                    </button>
-                                </>
-                            ) : null}
-                        </>
+                        <button onClick={handleCompleteActivity} disabled={isCompleting} className="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 disabled:bg-gray-400 font-bold text-lg">
+                            {isCompleting ? <Spinner size="sm" /> : 'Aktiviteyi Bitir'}
+                        </button>
                     ) : (
                         <div className="text-center p-4 bg-green-50 text-green-800 rounded-lg">
                             <p className="font-bold text-xl">Bu aktiviteyi tamamladınız.</p>
-                            {activity.score !== null && activity.score !== undefined && (
-                                 <p className="text-lg mt-2">Skorunuz: <span className="font-extrabold text-2xl">{activity.score}</span></p>
-                            )}
-                            <button
-                                onClick={() => navigate('/student/activities')}
-                                className="mt-6 bg-blue-500 text-white py-2 px-6 rounded-lg hover:bg-blue-600 font-semibold"
-                            >
+                            {activity.score !== null && <p className="text-lg mt-2">Skorunuz: <span className="font-extrabold text-2xl">{activity.score}</span></p>}
+                            <button onClick={() => navigate('/student/activities')} className="mt-6 bg-blue-500 text-white py-2 px-6 rounded-lg hover:bg-blue-600 font-semibold">
                                 Aktivitelerime Geri Dön
                             </button>
                         </div>
