@@ -14,9 +14,11 @@ const SearchActivitiesPage = () => {
         if (!user) return;
         setLoading(true);
         try {
-            const params = new URLSearchParams();
-            if (searchTerm) params.append('title', searchTerm);
-            if (difficulty) params.append('difficulty_level', difficulty);
+            // Backend'in beklediği parametreleri açıkça tanımla
+            const params = {
+                title: searchTerm || undefined,
+                difficulty_level: difficulty || undefined,
+            };
 
             // GET /api/aktiviteler/arama endpoint'ini kullan
             const response = await api.get('/api/aktiviteler/arama', { params });

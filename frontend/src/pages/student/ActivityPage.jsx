@@ -22,25 +22,24 @@ const ActivityPage = () => {
             try {
                 const response = await api.get(`/api/aktiviteler/${activityId}`);
                 const fetchedActivity = response.data;
-                console.log("API'den gelen aktivite verisi:", fetchedActivity);
-
-
-                // --- ESKİ VERİ DÖNÜŞTÜRME KODUNU SİLİN ---
-                // Gelen 'questions' verisinin her zaman obje dizisi olmasını sağla
-                // if (Array.isArray(fetchedActivity.questions)) {
-                //     // ...
-                // } else {
-                //     fetchedActivity.questions = [];
-                // }
-                // --- SİLİNECEK ALAN SONU ---
+                
+                // Gelen verideki 'questions' bir JSON string ise onu parse et
+                if (typeof fetchedActivity.questions === 'string') {
+                    try {
+                        fetchedActivity.questions = JSON.parse(fetchedActivity.questions);
+                    } catch (e) {
+                        console.error("Soru formatı bozuk:", e);
+                        fetchedActivity.questions = [];
+                    }
+                }
 
                 setActivity(fetchedActivity);
 
-                // Quiz ise ve henüz tamamlanmadıysa, cevap state'ini başlat
+                // Quiz ise ve tamamlanmadıysa, cevap state'ini hazırla
                 if (fetchedActivity?.activity_type === 'quiz' && !fetchedActivity.completed) {
                     const initialAnswers = {};
-                    // 'questions' alanı yoksa veya boşsa diye kontrol ekle
-                    (fetchedActivity.questions || []).forEach((_, index) => {
+                    (fetchedActivity.questions || []).forEach((q, index) => {
+                        // Her soru için cevap state'ini başlat
                         initialAnswers[index] = '';
                     });
                     setAnswers(initialAnswers);
@@ -75,29 +74,35 @@ const ActivityPage = () => {
         setAnswers(prev => ({ ...prev, [questionIndex]: answer }));
     };
 
+    // --- GÜNCELLENDİ: Aktivite tamamlama fonksiyonu ---
     const handleCompleteActivity = async () => {
         setIsCompleting(true);
+        
         try {
             let response;
             if (activity.activity_type === 'quiz') {
+                // Quiz tamamlama mantığı
                 const cevaplarArray = Object.values(answers);
-                
                 if (cevaplarArray.length !== activity.questions.length || cevaplarArray.some(ans => ans === '')) {
                     toast.error("Lütfen tüm soruları cevaplayın.");
                     setIsCompleting(false);
                     return;
                 }
+                const payload = { cevaplar: cevaplarArray };
                 
-                response = await api.post(`/api/aktiviteler/ogrenci/${activityId}/cevapla`, {
-                    student_id: user.id,
-                    cevaplar: cevaplarArray
-                });
+                // Backend'deki doğru endpoint'i çağır
+                response = await api.post(`/api/aktiviteler/ogrenci/${activityId}/cevapla`, payload);
+                
             } else {
-                response = await api.post(`/api/aktiviteler/ogrenci/${activityId}/tamamla`, {
-                    feedback: feedback
-                });
+                // Okuma aktivitesi tamamlama mantığı
+                const payload = { 
+                    completed: true,
+                };
+                // Backend'deki PUT endpoint'ini kullan
+                response = await api.put(`/api/aktiviteler/${activityId}`, payload);
             }
-            
+
+            // API'den dönen güncel aktivite verisiyle state'i tamamen yenile
             setActivity(response.data);
 
             if (response.data.score !== null && response.data.score !== undefined) {
@@ -123,7 +128,7 @@ const ActivityPage = () => {
     }
 
     const isQuiz = activity.activity_type === 'quiz';
-    const hasQuestions = activity.questions && activity.questions.length > 0;
+    const hasQuestions = Array.isArray(activity.questions) && activity.questions.length > 0;
 
     return (
         <div className="p-4 sm:p-6 max-w-4xl mx-auto">
@@ -137,11 +142,11 @@ const ActivityPage = () => {
                     <div>
                         <h2 className="text-2xl font-semibold mb-4 border-b pb-2">Sorular</h2>
                         {hasQuestions ? (
-                            activity.questions.map((q, qIndex) => (
+                            activity.questions.map((questionData, qIndex) => (
                                 <div key={qIndex} className="mb-6 pb-4 border-b last:border-b-0">
-                                    <p className="font-semibold text-lg mb-3">{qIndex + 1}. {q.question_text}</p>
+                                    <p className="font-semibold text-lg mb-3">{qIndex + 1}. {questionData.question_text}</p>
                                     <div className="space-y-2">
-                                        {(q.options || []).map((option, oIndex) => {
+                                        {questionData.options.map((option, oIndex) => {
                                             const isChecked = activity.completed 
                                                 ? (activity.student_answers && activity.student_answers[qIndex] === option)
                                                 : answers[qIndex] === option;

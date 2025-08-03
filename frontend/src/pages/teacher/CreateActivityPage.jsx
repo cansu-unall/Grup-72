@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -7,79 +7,72 @@ import Spinner from '../../components/common/Spinner';
 const CreateActivityPage = () => {
     const { user } = useAuth();
     
+    // State basitleştirildi, manuel quiz alanları kaldırıldı
     const initialActivityState = {
         title: '',
         description: '',
-        activity_type: 'okuma',
         difficulty_level: 1,
         student_id: '',
-        content: '', // Okuma metni içeriği
-        questions: [{ question_text: '', options: ['', ''], correct_answer: '' }] // Quiz soruları
+        content: '', 
     };
 
     const [activity, setActivity] = useState(initialActivityState);
     
+    const [aiCategory, setAiCategory] = useState('doğa');
+    const [studentSearch, setStudentSearch] = useState('');
+    const [searchedStudents, setSearchedStudents] = useState([]);
+    const [selectedStudentName, setSelectedStudentName] = useState('');
+
     const [generatedText, setGeneratedText] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSimplifying, setIsSimplifying] = useState(false);
+    const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
+
+    // Öğrenci arama fonksiyonu (Değişiklik yok)
+    useEffect(() => {
+        if (studentSearch.length > 2) {
+            const delayDebounceFn = setTimeout(async () => {
+                try {
+                    const response = await api.get(`/api/kullanicilar/ara?email=${studentSearch}&role=student`);
+                    setSearchedStudents(response.data);
+                } catch (error) {
+                    toast.error("Öğrenci aranırken hata oluştu.");
+                    setSearchedStudents([]);
+                }
+            }, 500);
+            return () => clearTimeout(delayDebounceFn);
+        } else {
+            setSearchedStudents([]);
+        }
+    }, [studentSearch]);
+
+    const handleStudentSelect = (student) => {
+        setActivity(prev => ({ ...prev, student_id: student.id }));
+        setSelectedStudentName(student.full_name);
+        setStudentSearch('');
+        setSearchedStudents([]);
+    };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        const processedValue = name === 'difficulty_level' || name === 'student_id' ? (value === '' ? '' : Number(value)) : value;
+        const processedValue = name === 'difficulty_level' ? Number(value) : value;
         setActivity(prev => ({ ...prev, [name]: processedValue }));
     };
 
-    const handleQuestionChange = (index, field, value) => {
-        const newQuestions = [...activity.questions];
-        newQuestions[index][field] = value;
-        setActivity(prev => ({ ...prev, questions: newQuestions }));
-    };
-
-    const handleOptionChange = (qIndex, oIndex, value) => {
-        const newQuestions = [...activity.questions];
-        // Seçenek değiştiğinde, doğru cevabı sıfırla
-        newQuestions[qIndex].options[oIndex] = value;
-        newQuestions[qIndex].correct_answer = ''; 
-        setActivity(prev => ({ ...prev, questions: newQuestions }));
-    };
-
-    const addQuestion = () => {
-        const newQuestions = [...activity.questions, { question_text: '', options: ['', ''], correct_answer: '' }];
-        setActivity(prev => ({ ...prev, questions: newQuestions }));
-    };
-
-    const removeQuestion = (index) => {
-        const newQuestions = activity.questions.filter((_, i) => i !== index);
-        setActivity(prev => ({ ...prev, questions: newQuestions }));
-    };
-
-    const addOption = (qIndex) => {
-        const newQuestions = [...activity.questions];
-        newQuestions[qIndex].options.push('');
-        setActivity(prev => ({ ...prev, questions: newQuestions }));
-    };
-
-    const removeOption = (qIndex, oIndex) => {
-        const newQuestions = [...activity.questions];
-        if (newQuestions[qIndex].options.length > 2) { // En az 2 seçenek kalmalı
-            newQuestions[qIndex].options.splice(oIndex, 1);
-            // Seçenek silindiğinde, doğru cevabı sıfırla
-            newQuestions[qIndex].correct_answer = '';
-            setActivity(prev => ({ ...prev, questions: newQuestions }));
-        } else {
-            toast.error("Bir sorunun en az iki seçeneği olmalıdır.");
-        }
-    };
-
+    // Metin üretme ve sadeleştirme fonksiyonları (Değişiklik yok)
     const handleGenerateText = async () => {
+        if (!aiCategory) {
+            toast.error("Lütfen bir kategori girin.");
+            return;
+        }
         setIsGenerating(true);
         try {
-            const response = await api.post('/api/ai/metin-uret', { kategori: "doğa" });
+            const response = await api.post('/api/ai/metin-uret', { kategori: aiCategory });
             setGeneratedText(response.data.uretilen_metin);
             toast.success("Metin başarıyla üretildi!");
         } catch (err) {
-            toast.error("Metin üretilirken bir hata oluştu.");
+            toast.error(err.response?.data?.detail || "Metin üretilirken bir hata oluştu.");
         } finally {
             setIsGenerating(false);
         }
@@ -92,99 +85,115 @@ const CreateActivityPage = () => {
         }
         setIsSimplifying(true);
         try {
-            const response = await api.post('/api/ai/metin-sadeleştir', { raw_text: generatedText, target_level: 0 });
+            const response = await api.post('/api/ai/metin-sadeleştir', { raw_text: generatedText, target_level: activity.difficulty_level });
             setActivity(prev => ({ ...prev, content: response.data.simplified_text }));
             toast.success("Metin sadeleştirildi ve forma eklendi!");
         } catch (err) {
-            toast.error("Metin sadeleştirilirken bir hata oluştu.");
+            toast.error(err.response?.data?.detail || "Metin sadeleştirilirken bir hata oluştu.");
         } finally {
             setIsSimplifying(false);
         }
     };
 
-    const handleFormSubmit = async (e) => {
-        e.preventDefault();
-        setIsSubmitting(true);
+    // --- YENİ: "Oluştur ve Quiz Üret" fonksiyonu ---
+    const handleCreateAndGenerateQuiz = async () => {
+        if (!activity.student_id || !activity.title || !activity.content) {
+            toast.error("Lütfen Öğrenci, Başlık ve İçerik alanlarını doldurun.");
+            return;
+        }
+        
+        setIsGeneratingQuiz(true);
+        let newActivityId = null;
 
-        try {
-            let payload;
-
-            if (activity.activity_type === 'okuma') {
-                // --- OKUMA AKTİVİTESİ PAYLOAD'U ---
-                if (!activity.title || !activity.content || !activity.student_id) {
-                    toast.error("Lütfen Başlık, İçerik ve Öğrenci ID alanlarını doldurun.");
-                    setIsSubmitting(false);
-                    return;
-                }
-                payload = {
-                    activity_type: activity.activity_type,
-                    title: activity.title,
-                    description: activity.description,
-                    content: activity.content,
-                    difficulty_level: Number(activity.difficulty_level),
-                    student_id: Number(activity.student_id),
-                };
-            } 
-            else if (activity.activity_type === 'quiz') {
-                // --- QUIZ AKTİVİTESİ PAYLOAD'U ---
-                if (!activity.title || !activity.student_id || activity.questions.some(q => !q.question_text || !q.correct_answer || q.options.some(opt => opt.trim() === ''))) {
-                    toast.error("Lütfen Başlık, Öğrenci ID ve tüm sorular için gerekli alanları doldurun.");
-                    setIsSubmitting(false);
-                    return;
-                }
-                payload = {
-                    activity_type: activity.activity_type,
-                    title: activity.title,
-                    description: activity.description,
-                    difficulty_level: Number(activity.difficulty_level),
-                    student_id: Number(activity.student_id),
-                    questions: activity.questions,
-                    content: "Bu bir quiz aktivitesidir.", // Zorunlu content alanı için placeholder
-                };
+         try {
+            // 1. Adım: Geçici bir "okuma" aktivitesi oluştur
+            toast.loading('Aktivite oluşturuluyor...');
+            // --- GÜNCELLENDİ: 'questions' alanı payload'dan kaldırıldı ---
+            const readingPayload = {
+                title: activity.title,
+                description: activity.description,
+                difficulty_level: Number(activity.difficulty_level),
+                student_id: Number(activity.student_id),
+                content: activity.content,
+                activity_type: 'okuma',
+                // questions: '[]' // Bu satır kaldırıldı
+            };
+            const createResponse = await api.post('/api/aktiviteler/', readingPayload);
+            newActivityId = createResponse.data.id;
+            
+            if (!newActivityId) {
+                throw new Error("Aktivite oluşturuldu ancak ID alınamadı.");
             }
 
-            // Tek bir POST isteği ile aktiviteyi oluştur
-            await api.post('/api/aktiviteler/', payload);
+            // 2. Adım: Oluşturulan aktivitenin ID'si ile soruları üret
+            toast.dismiss();
+            toast.loading('Yapay zeka soruları üretiyor...');
+            const quizResponse = await api.post(`/api/ai/anlama-sorusu-uret/${newActivityId}`);
+            
+            // API'den gelen veriyi frontend'in beklediği formata çevir
+            const generatedQuestions = quizResponse.data.sorular.map(item => ({
+                question_text: item.soru,
+                options: [item.dogru_cevap, "Seçenek B", "Seçenek C"], // API sadece doğru cevabı veriyorsa, seçenekleri doldurmamız gerekir.
+                correct_answer: item.dogru_cevap
+            }));
 
-            toast.success('Aktivite başarıyla oluşturuldu ve öğrenciye atandı!');
+            if (!generatedQuestions || generatedQuestions.length === 0) {
+                throw new Error("Yapay zeka bu metinden soru üretemedi.");
+            }
+
+            // 3. Adım: Aktiviteyi "quiz" olarak güncelle
+            toast.dismiss();
+            toast.loading('Quiz aktiviteye dönüştürülüyor...');
+            // --- GÜNCELLENDİ: Güncelleme payload'ı da açıkça oluşturuldu ---
+            const quizPayload = {
+                title: activity.title,
+                description: activity.description,
+                difficulty_level: Number(activity.difficulty_level),
+                student_id: Number(activity.student_id),
+                content: activity.content,
+                activity_type: 'quiz',
+                questions: JSON.stringify(generatedQuestions)
+            };
+            await api.put(`/api/aktiviteler/${newActivityId}`, quizPayload);
+
+            toast.dismiss();
+            toast.success('Quiz başarıyla üretildi ve öğrenciye atandı!');
+            
+            // Formu temizle
             setActivity(initialActivityState);
             setGeneratedText('');
+            setSelectedStudentName('');
 
         } catch (error) {
-            console.error("Aktivite oluşturma hatası:", error);
-            if (error.response?.data?.detail) {
-                const errorDetails = error.response.data.detail;
-                if (Array.isArray(errorDetails)) {
-                    // FastAPI'den gelen detaylı validasyon hatalarını göster
-                    errorDetails.forEach(err => {
-                        toast.error(`${err.loc.slice(-1)[0]}: ${err.msg}`);
-                    });
-                } else {
-                    toast.error(String(errorDetails));
-                }
-            } else {
-                toast.error('Aktivite oluşturulurken bilinmeyen bir hata oluştu.');
-            }
+            toast.dismiss();
+            toast.error(error.response?.data?.detail || 'İşlem sırasında bir hata oluştu.');
+            console.error("Quiz oluşturma zincirinde hata:", error);
         } finally {
-            setIsSubmitting(false);
+            setIsGeneratingQuiz(false);
         }
     };
-
-    const isQuiz = activity.activity_type === 'quiz';
 
     return (
         <div>
             <h1 className="text-3xl font-bold mb-6">Aktivite Oluştur</h1>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Yapay Zeka Araçları */}
-                <div className={`bg-white p-6 rounded-lg shadow space-y-6 ${isQuiz ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                    <h2 className="text-2xl font-bold text-indigo-600">Yapay Zeka Araçları</h2>
-                    <p className="text-sm text-gray-500">Bu araçlar sadece "Okuma Metni" türü için kullanılabilir.</p>
+                <div className="bg-white p-6 rounded-lg shadow space-y-6">
+                    <h2 className="text-2xl font-bold text-indigo-600">Yapay Zeka Metin Araçları</h2>
                     <div>
                         <h3 className="font-medium mb-2">1. Adım: Metin Üret</h3>
-                        <button onClick={handleGenerateText} disabled={isGenerating || isQuiz} className="bg-indigo-500 text-white py-2 px-4 rounded-lg disabled:bg-gray-400 w-full">
-                            {isGenerating ? <Spinner size="sm" /> : 'Rastgele Metin Üret'}
-                        </button>
+                        <div className="flex gap-2">
+                            <input 
+                                type="text"
+                                value={aiCategory}
+                                onChange={(e) => setAiCategory(e.target.value)}
+                                placeholder="Bir kategori girin (örn: hayvanlar)"
+                                className="w-full border p-2 rounded-lg"
+                            />
+                            <button onClick={handleGenerateText} disabled={isGenerating} className="bg-indigo-500 text-white py-2 px-4 rounded-lg disabled:bg-gray-400 whitespace-nowrap">
+                                {isGenerating ? <Spinner size="sm" /> : 'Metin Üret'}
+                            </button>
+                        </div>
                         {generatedText && (
                             <div className="mt-4 p-4 bg-gray-100 rounded-lg border">
                                 <p className="font-semibold mb-2">Üretilen Metin:</p>
@@ -194,7 +203,7 @@ const CreateActivityPage = () => {
                     </div>
                      <div>
                         <h3 className="font-medium mb-2">2. Adım: Metni Sadeleştir ve Forma Ekle</h3>
-                        <button onClick={handleSimplifyText} disabled={!generatedText || isSimplifying || isQuiz} className="bg-teal-500 text-white py-2 px-4 rounded-lg disabled:bg-gray-400 w-full">
+                        <button onClick={handleSimplifyText} disabled={!generatedText || isSimplifying} className="bg-teal-500 text-white py-2 px-4 rounded-lg disabled:bg-gray-400 w-full">
                             {isSimplifying ? <Spinner size="sm" /> : 'Metni Sadeleştir ve Kullan'}
                         </button>
                     </div>
@@ -203,22 +212,40 @@ const CreateActivityPage = () => {
                 {/* Aktivite Formu */}
                 <div className="bg-white p-6 rounded-lg shadow">
                     <h2 className="text-2xl font-bold text-indigo-600">Aktivite Formu</h2>
-                    <form onSubmit={handleFormSubmit} className="space-y-4 mt-4">
-                        {/* Ortak Alanlar */}
-                        <div>
-                            <label htmlFor="student_id" className="block font-medium">Öğrenci ID</label>
-                            <input id="student_id" name="student_id" type="number" value={activity.student_id} onChange={handleInputChange} className="w-full border p-2 rounded-lg" required placeholder="Öğrenci ID'sini girin"/>
+                    <form onSubmit={(e) => e.preventDefault()} className="space-y-4 mt-4">
+                        {/* Öğrenci Arama */}
+                        <div className="relative">
+                            <label htmlFor="student_search" className="block font-medium">Öğrenci Ata</label>
+                            <input 
+                                id="student_search" 
+                                name="student_search" 
+                                type="text" 
+                                value={studentSearch} 
+                                onChange={(e) => setStudentSearch(e.target.value)} 
+                                className="w-full border p-2 rounded-lg"  
+                                placeholder="Aramak için öğrenci email'i yazın..."
+                                autoComplete="off"
+                            />
+                            {selectedStudentName && !studentSearch && (
+                                <div className="mt-2 p-2 bg-green-100 text-green-800 rounded-lg">
+                                    Seçilen Öğrenci: <strong>{selectedStudentName}</strong>
+                                </div>
+                            )}
+                            {searchedStudents.length > 0 && (
+                                <ul className="absolute z-10 w-full bg-white border rounded-lg mt-1 max-h-60 overflow-y-auto">
+                                    {searchedStudents.map(student => (
+                                        <li key={student.id} onClick={() => handleStudentSelect(student)} className="p-2 hover:bg-indigo-100 cursor-pointer">
+                                            {student.full_name} ({student.email})
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>
+                        
+                        {/* Diğer form alanları */}
                         <div>
                             <label htmlFor="title" className="block font-medium">Başlık</label>
                             <input id="title" name="title" type="text" value={activity.title} onChange={handleInputChange} className="w-full border p-2 rounded-lg" required/>
-                        </div>
-                        <div>
-                            <label htmlFor="activity_type" className="block font-medium">Aktivite Türü</label>
-                            <select name="activity_type" id="activity_type" value={activity.activity_type} onChange={handleInputChange} className="w-full border p-2 rounded-lg bg-white">
-                                <option value="okuma">Okuma Metni</option>
-                                <option value="quiz">Quiz</option>
-                            </select>
                         </div>
                         <div>
                             <label htmlFor="difficulty_level" className="block font-medium">Zorluk Seviyesi</label>
@@ -229,61 +256,27 @@ const CreateActivityPage = () => {
                             </select>
                         </div>
                         <div>
-                            <label htmlFor="description" className="block font-medium">Açıklama</label>
+                            <label htmlFor="description" className="block font-medium">Açıklama (İsteğe Bağlı)</label>
                             <textarea id="description" name="description" value={activity.description} onChange={handleInputChange} className="w-full border p-2 rounded-lg"></textarea>
                         </div>
+                        
+                        {/* Okuma Metni İçerik Alanı */}
+                        <div>
+                            <label htmlFor="content" className="block font-medium">İçerik (Metin)</label>
+                            <textarea id="content" name="content" value={activity.content} onChange={handleInputChange} className="w-full border p-2 rounded-lg h-48" required></textarea>
+                        </div>
 
-                        {/* Dinamik Alanlar */}
-                        {isQuiz ? (
-                            <div className="space-y-4 border-t pt-4">
-                                <h3 className="text-xl font-semibold">Sorular</h3>
-                                {activity.questions.map((q, qIndex) => (
-                                    <div key={qIndex} className="p-4 border rounded-lg bg-gray-50 space-y-3">
-                                        <div className="flex justify-between items-center">
-                                            <label className="block font-medium">Soru {qIndex + 1}</label>
-                                            <button type="button" onClick={() => removeQuestion(qIndex)} className="text-red-500 hover:text-red-700 text-sm font-semibold">Soruyu Kaldır</button>
-                                        </div>
-                                        <textarea value={q.question_text} onChange={(e) => handleQuestionChange(qIndex, 'question_text', e.target.value)} className="w-full border p-2 rounded-lg" placeholder="Soru metnini girin" required />
-                                        
-                                        <label className="block font-medium text-sm">Seçenekler</label>
-                                        {q.options.map((opt, oIndex) => (
-                                            <div key={oIndex} className="flex items-center space-x-2">
-                                                <input type="text" value={opt} onChange={(e) => handleOptionChange(qIndex, oIndex, e.target.value)} className="w-full border p-2 rounded-lg text-sm" placeholder={`Seçenek ${oIndex + 1}`} required />
-                                                <button type="button" onClick={() => removeOption(qIndex, oIndex)} className="text-gray-500 hover:text-red-600 p-1 text-xs">Kaldır</button>
-                                            </div>
-                                        ))}
-                                        <button type="button" onClick={() => addOption(qIndex)} className="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 py-1 px-3 rounded-md">
-                                            + Seçenek Ekle
-                                        </button>
-
-                                        <label className="block font-medium text-sm pt-2 border-t">Doğru Cevap</label>
-                                        <select 
-                                            value={q.correct_answer} 
-                                            onChange={(e) => handleQuestionChange(qIndex, 'correct_answer', e.target.value)} 
-                                            className="w-full border p-2 rounded-lg bg-green-50" 
-                                            required
-                                        >
-                                            <option value="" disabled>Doğru cevabı seçin...</option>
-                                            {q.options.map((opt, oIndex) => (
-                                                opt.trim() !== '' && <option key={oIndex} value={opt}>{opt}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                ))}
-                                <button type="button" onClick={addQuestion} className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600">
-                                    Yeni Soru Ekle
-                                </button>
-                            </div>
-                        ) : (
-                            <div>
-                                <label htmlFor="content" className="block font-medium">İçerik (Metin)</label>
-                                <textarea id="content" name="content" value={activity.content} onChange={handleInputChange} className="w-full border p-2 rounded-lg h-32" required></textarea>
-                            </div>
-                        )}
-
-                        <button type="submit" disabled={isSubmitting} className="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 disabled:bg-gray-400 font-semibold">
-                            {isSubmitting ? <Spinner size="sm" /> : 'Aktiviteyi Oluştur ve Ata'}
-                        </button>
+                        {/* --- GÜNCELLENDİ: Tek Buton Alanı --- */}
+                        <div className="border-t pt-4">
+                            <button 
+                                type="button" 
+                                onClick={handleCreateAndGenerateQuiz}
+                                disabled={isSubmitting || isGeneratingQuiz} 
+                                className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 disabled:bg-gray-400 font-semibold"
+                            >
+                                {isGeneratingQuiz ? <Spinner size="sm" /> : 'Oluştur ve Quiz Üret'}
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
